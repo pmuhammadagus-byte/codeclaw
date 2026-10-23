@@ -1,0 +1,15 @@
+node_modules/
+data.db*
+index.db*
+downloads/
+.branches/
+config.json
+*.log
+skills/
+knowledge.db*
+cron.log
+
+# Backup files — jangan commit
+*.bak
+*.bak.*
+test-*.js

@@ -1,0 +1,12 @@
+{
+  "name": "codeclaw-pro",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "tg": "node telegram.js"
+  },
+  "engines": { "node": ">=22.5.0" },
+  "dependencies": {}
+}
