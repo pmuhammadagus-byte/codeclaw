@@ -8,6 +8,7 @@ import { TelegramAPI } from "./lib/telegram-api.js";
 import { todoSection } from "./lib/planner.js";
 import { memorySection } from "./lib/memory.js";
 import { loadConfig, migrateIfNeeded } from "./lib/config.js";
+import { getBrainPrompt } from "./lib/brain.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, "config.json");
@@ -176,7 +177,8 @@ async function sendText(chatId, text) {
 }
 
 function buildSystem(chatId) {
-  return BASE_SYSTEM + todoSection(session, chatId) + memorySection(session, chatId);
+  const brainLevel = CONFIG.agent.brainLevel || CONFIG.agent.brain || "normal";
+  return BASE_SYSTEM + getBrainPrompt(brainLevel) + todoSection(session, chatId) + memorySection(session, chatId);
 }
 
 async function processMessage(chatId, userInput, from) {
@@ -319,7 +321,7 @@ async function main() {
   log("Starting CodeClaw Pro Telegram...");
   log(`Model: ${CONFIG.llm.modelRef}`);
   const me = await tg.getMe();
-  log(`Bot: @${me.username} | PID ${process.pid}`);
+  log(`Bot: @${me.username} | Brain: ${CONFIG.agent.brainLevel || "normal"} | PID ${process.pid}`);
   log(ALLOWED.size ? `Allowlist: ${[...ALLOWED].join(",")}` : "⚠️  Allowlist kosong — semua user bisa pakai");
 
   let offset = 0, errors = 0;

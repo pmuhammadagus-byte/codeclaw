@@ -10,6 +10,7 @@ import { memorySection } from "./lib/memory.js";
 import { loadConfig, migrateIfNeeded } from "./lib/config.js";
 import { SkillStore, buildSkillSection } from "./lib/skills.js";
 import { Knowledge } from "./lib/knowledge.js";
+import { getBrainPrompt } from "./lib/brain.js";
 import { distillSkill, isComplexTask } from "./lib/skill-distiller.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -54,7 +55,7 @@ console.log(`${C.cyan}${C.bold}╔═══════════════�
 console.log(`║       CodeClaw Pro v1.0                ║`);
 console.log(`║  Coding agent for Ubuntu PRoot         ║`);
 console.log(`╚════════════════════════════════════════╝${C.reset}`);
-console.log(`${C.dim}Model: ${CONFIG.llm.modelRef} | DB: ${DB_PATH}${C.reset}`);
+console.log(`${C.dim}Model: ${CONFIG.llm.modelRef} | Brain: ${CONFIG.agent.brainLevel || "normal"} | DB: ${DB_PATH}${C.reset}`);
 console.log(`${C.dim}/clear /todo /mem /help /exit${C.reset}\n`);
 
 async function askApproval(cmd) {
@@ -76,7 +77,9 @@ function buildSystem(currentTask = "") {
         results.map(r => `- ${r.title}: ${r.content.slice(0, 200)}`).join("\n");
     }
   }
-  return BASE_SYSTEM + todoSection(session, CHAT_ID) + memorySection(session, CHAT_ID) + skillSection + knowledgeSection;
+  const brainLevel = CONFIG.agent.brainLevel || CONFIG.agent.brain || "normal";
+  const brainSection = getBrainPrompt(brainLevel);
+  return BASE_SYSTEM + brainSection + todoSection(session, CHAT_ID) + memorySection(session, CHAT_ID) + skillSection + knowledgeSection;
 }
 
 async function runTurn(userInput) {

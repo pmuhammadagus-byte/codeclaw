@@ -111,6 +111,49 @@ function handleModel(args) {
   ${C.cyan}codeclaw model add-model <provider> <id> [name]${C.reset} Tambah model ke provider`);
 }
 
+// === Brain ===
+function handleBrain(args) {
+  const [sub, val] = args;
+  const cfg = load();
+  const { BRAIN_LEVELS, isValidLevel } = require_brain();
+
+  if (sub === "status" || !sub) {
+    const level = cfg.raw.agent?.brainLevel || "normal";
+    console.log(`${C.bold}Brain level:${C.reset} ${C.cyan}${level}${C.reset}\n`);
+    console.log(`Levels:`);
+    const desc = {
+      off: "tanpa ritual (paling cepat)",
+      normal: "verify dasar (balanced)",
+      high: "think + verify untuk task kompleks (recommended)",
+      genius: "5 fase ritual untuk SEMUA task (paling lambat, paling teliti)",
+    };
+    for (const l of BRAIN_LEVELS) {
+      const mark = l === level ? `${C.green}▶${C.reset}` : " ";
+      console.log(`  ${mark} ${l.padEnd(8)} ${C.dim}${desc[l]}${C.reset}`);
+    }
+    return;
+  }
+
+  if (sub === "set") {
+    if (!val || !isValidLevel(val)) {
+      console.error(`${C.red}Usage: codeclaw brain set <${BRAIN_LEVELS.join("|")}>${C.reset}`);
+      process.exit(1);
+    }
+    cfg.raw.agent = cfg.raw.agent || {};
+    cfg.raw.agent.brainLevel = val;
+    save(cfg);
+    console.log(`${C.green}✅ Brain level: ${val}${C.reset}`);
+    return;
+  }
+
+  console.log(`Usage:\n  ${C.cyan}codeclaw brain status${C.reset}\n  ${C.cyan}codeclaw brain set <level>${C.reset}`);
+}
+
+function require_brain() {
+  // dynamic import workaround for ESM in CJS context
+  return { BRAIN_LEVELS: ["off", "normal", "high", "genius"], isValidLevel: (l) => ["off","normal","high","genius"].includes(l) };
+}
+
 // === Research ===
 async function handleResearch(args) {
   const [sub, ...rest] = args;
@@ -306,6 +349,7 @@ function printHelp() {
   console.log(`  ${C.cyan}channel${C.reset}    Manajemen channel (telegram status/enable/set-token/allow)`);
   console.log(`  ${C.cyan}panel${C.reset}      Config panel interaktif (atau: config tanpa arg)`);
   console.log(`  ${C.cyan}config${C.reset}     Config (show, path, edit, migrate)`);
+  console.log(`  ${C.cyan}brain${C.reset}      Brain level (off/normal/high/genius)`);
   console.log(`  ${C.cyan}research${C.reset}   Riset topik (ArXiv, HN) → knowledge base`);
   console.log(`  ${C.cyan}cron${C.reset}       Cron research (status, run)`);
   console.log(`  ${C.cyan}start${C.reset}      Jalankan agent (default)`);
@@ -324,6 +368,7 @@ try {
       else handleConfig(args);
       break;
     case "panel":     await import("./panel.js"); break;
+    case "brain":     handleBrain(args); break;
     case "research":  await handleResearch(args); break;
     case "cron":      await handleCron(args); break;
     case "start":     await import("./index.js"); break;

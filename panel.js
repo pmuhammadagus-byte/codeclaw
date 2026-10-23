@@ -50,7 +50,7 @@ async function mainMenu() {
     divider();
     console.log(`  ${C.cyan}[1]${C.reset} Model settings`);
     console.log(`  ${C.cyan}[2]${C.reset} Telegram channel`);
-    console.log(`  ${C.cyan}[3]${C.reset} Agent settings`);
+    console.log(`  ${C.cyan}[3]${C.reset} Agent settings (${cfg.agent.brainLevel || "normal"} brain)`);
     console.log(`  ${C.cyan}[4]${C.reset} Config tools`);
     console.log(`  ${C.cyan}[5]${C.reset} ${C.green}Start agent (CLI)${C.reset}`);
     console.log(`  ${C.cyan}[6]${C.reset} ${C.green}Start Telegram bot${C.reset}`);
@@ -250,6 +250,7 @@ async function agentMenu() {
     console.log(`  ${C.cyan}[3]${C.reset} Approval mode           (${a.approvalMode})`);
     console.log(`  ${C.cyan}[4]${C.reset} Subagent depth          (${a.maxSubagentDepth})`);
     console.log(`  ${C.cyan}[5]${C.reset} Subagent iterations     (${a.maxSubagentIterations})`);
+  console.log(`  ${C.cyan}[6]${C.reset} Brain level             (${a.brainLevel || "normal"})`);
     console.log();
     console.log(`  ${C.dim}[b] Back${C.reset}    ${C.dim}[q] Quit${C.reset}`);
     console.log();
@@ -262,6 +263,7 @@ async function agentMenu() {
       "3": ["approvalMode", "Mode (dangerous-only/all/none)", "enum"],
       "4": ["maxSubagentDepth", "Subagent depth", "number"],
       "5": ["maxSubagentIterations", "Subagent iterations", "number"],
+      "6": ["brainLevel", "Brain level (off/normal/high/genius)", "enum-brain"],
     };
     const f = fields[ch]; if (!f) continue;
     const [key, label, type] = f;
@@ -273,6 +275,9 @@ async function agentMenu() {
       const n = parseInt(inp);
       if (isNaN(n) || n <= 0) { console.log(`\n  ${C.red}❌ Angka positif${C.reset}`); await pause(); continue; }
       raw.raw.agent[key] = n;
+    } else if (type === "enum-brain") {
+      if (!["off", "normal", "high", "genius"].includes(inp)) { console.log(`\n  ${C.red}❌ Pilihan: off, normal, high, genius${C.reset}`); await pause(); continue; }
+      raw.raw.agent[key] = inp;
     } else {
       if (!["dangerous-only", "all", "none"].includes(inp)) { console.log(`\n  ${C.red}❌ Pilihan: dangerous-only, all, none${C.reset}`); await pause(); continue; }
       raw.raw.agent[key] = inp;

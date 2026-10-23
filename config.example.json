@@ -72,7 +72,8 @@
     "contextWindow": 80,
     "approvalMode": "dangerous-only",
     "maxSubagentDepth": 2,
-    "maxSubagentIterations": 15
+    "maxSubagentIterations": 15,
+    "brainLevel": "high"
   },
   "research": {
     "enabled": false,
