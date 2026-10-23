@@ -62,6 +62,96 @@ function mdToHtml(text) {
   return s;
 }
 
+function escapeHtml(s) {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+const TOOL_ICONS = {
+  read_file: "📖", write_file: "✍️", edit_file: "✏️", list_dir: "📁",
+  search_code: "🔍", diff_preview: "🔀", refactor_multi: "🧩",
+  shell: "💻", install_package: "📦", run_tests: "🧪", parse_error: "🐛",
+  web_fetch: "🌐", web_search: "🔎",
+  todo_write: "📋", memory_set: "🧠", memory_get: "💭",
+  branch_save: "💾", branch_restore: "⏪",
+  index_codebase: "📚", search_index: "🗂️",
+  skill_save: "💡", skill_find: "🎯", skill_list: "📜", skill_record: "📊",
+  research_topic: "🔬", knowledge_search: "📖", knowledge_add: "🗃️",
+};
+
+const TOOL_LABELS = {
+  read_file: "Baca file", write_file: "Tulis file", edit_file: "Edit file",
+  list_dir: "List folder", search_code: "Cari kode", diff_preview: "Diff preview",
+  refactor_multi: "Refactor multi", shell: "Shell", install_package: "Install package",
+  run_tests: "Jalankan test", parse_error: "Parse error",
+  web_fetch: "Fetch web", web_search: "Web search",
+  todo_write: "Kelola todo", memory_set: "Simpan memori", memory_get: "Baca memori",
+  branch_save: "Snapshot", branch_restore: "Restore snapshot",
+  index_codebase: "Index codebase", search_index: "Cari di index",
+  skill_save: "Simpan skill", skill_find: "Cari skill", skill_list: "List skill",
+  skill_record: "Catat skill", research_topic: "Riset",
+  knowledge_search: "Cari knowledge", knowledge_add: "Simpan knowledge",
+};
+
+function toolArgPreview(name, args) {
+  if (!args || typeof args !== "object") return "";
+  const t = (s, n = 50) => String(s ?? "").slice(0, n);
+  switch (name) {
+    case "shell": return t(args.command, 60);
+    case "read_file": case "write_file": case "edit_file": return t(args.path, 60);
+    case "list_dir": return t(args.path || ".", 60);
+    case "search_code": return t(args.pattern, 40) + (args.glob ? ` in ${args.glob}` : "");
+    case "web_fetch": return t(args.url, 60);
+    case "web_search": return t(args.query, 50);
+    case "install_package": return (args.packages || []).join(", ").slice(0, 60);
+    case "refactor_multi": return `${t(args.glob, 30)} <- "${t(args.pattern, 20)}"`;
+    case "todo_write": return `${args.action}${args.task ? `: ${t(args.task, 30)}` : ""}`;
+    case "memory_set": return `${args.key} = ${t(args.value, 30)}`;
+    case "memory_get": return args.key || "(all)";
+    case "research_topic": return t(args.topic, 50);
+    case "knowledge_search": case "search_index": return t(args.query, 50);
+    case "knowledge_add": return t(args.title, 50);
+    case "skill_find": return t(args.task, 50);
+    case "skill_save": return t(args.name, 50);
+    case "skill_record": return `${args.id} -> ${args.success ? "OK" : "FAIL"}`;
+    case "branch_save": case "branch_restore": return t(args.name, 40);
+    default: return "";
+  }
+}
+
+function renderToolStatus(tools, iteration, maxIter) {
+  const MAX_SHOW = 12;
+  let displayTools = tools;
+  let trimmed = 0;
+  if (tools.length > MAX_SHOW) {
+    displayTools = tools.slice(-MAX_SHOW);
+    trimmed = tools.length - MAX_SHOW;
+  }
+  const lines = [];
+  lines.push(`<b>⚙️ Aktivitas Agent</b>  <i>langkah ${iteration}/${maxIter}</i>`);
+  lines.push("");
+  if (trimmed > 0) lines.push(`<i>... +${trimmed} tool sebelumnya</i>`);
+  for (const t of displayTools) {
+    const icon = TOOL_ICONS[t.name] || "🔧";
+    const label = TOOL_LABELS[t.name] || t.name;
+    const detail = toolArgPreview(t.name, t.args);
+    const detailStr = detail ? `  <code>${escapeHtml(detail)}</code>` : "";
+    const badge = t.status === "done" ? " ✅" : t.status === "error" ? " ❌" : " ⏳";
+    lines.push(`${icon} <b>${label}</b>${badge}${detailStr}`);
+  }
+  const done = tools.filter(t => t.status === "done").length;
+  const err = tools.filter(t => t.status === "error").length;
+  const run = tools.filter(t => t.status === "running").length;
+  const parts = [];
+  if (done) parts.push(`✅ ${done} selesai`);
+  if (err) parts.push(`❌ ${err} gagal`);
+  if (run) parts.push(`⏳ ${run} jalan`);
+  if (parts.length) {
+    lines.push("");
+    lines.push(`<i>${parts.join("  ·  ")}</i>`);
+  }
+  return lines.join("\n").slice(0, 4000);
+}
+
 function split(text, max = 4000) {
   if (text.length <= max) return [text];
   const out = []; let rem = text;
@@ -92,6 +182,20 @@ function buildSystem(chatId) {
 async function processMessage(chatId, userInput, from) {
   session.add(chatId, { role: "user", content: userInput });
 
+  const toolActivity = [];
+  let statusMsgId = null;
+  const updateToolStatus = async (iteration) => {
+    const html = renderToolStatus(toolActivity, iteration, CONFIG.agent.maxToolIterations);
+    try {
+      if (statusMsgId) {
+        await tg.editMessageText(chatId, statusMsgId, html);
+      } else {
+        const msg = await tg.sendMessage(chatId, html);
+        statusMsgId = msg.message_id;
+      }
+    } catch { /* silent */ }
+  };
+
   for (let iter = 0; iter < CONFIG.agent.maxToolIterations; iter++) {
     const history = session.history(chatId, CONFIG.agent.contextWindow);
     const messages = [{ role: "system", content: buildSystem(chatId) }, ...history];
@@ -109,17 +213,22 @@ async function processMessage(chatId, userInput, from) {
     session.add(chatId, message);
 
     if (finishReason === "tool_calls" || message.tool_calls?.length) {
-      const toolNames = (message.tool_calls ?? []).map(tc => tc.function.name).join(", ");
-      tg.sendMessage(chatId, `⚙️ ${toolNames}`).catch(() => {});
-
+      const currentIter = iter + 1;
       for (const tc of message.tool_calls ?? []) {
         let args; try { args = JSON.parse(tc.function.arguments || "{}"); } catch { args = {}; }
+        const entry = { name: tc.function.name, args, status: "running" };
+        toolActivity.push(entry);
+        await updateToolStatus(currentIter);
+
         log(`tool ${tc.function.name} from ${from.id}`);
         const toolResult = await executeTool(tc.function.name, args, {
           session, chatId, config: CONFIG,
           approvalCallback: async () => true,
           approvalMode: "none",
         });
+        entry.status = /^(error|failed|❌)/i.test(String(toolResult || "").trim()) ? "error" : "done";
+        await updateToolStatus(currentIter);
+
         session.add(chatId, { role: "tool", tool_call_id: tc.id, name: tc.function.name, content: toolResult });
       }
       continue;
