@@ -84,8 +84,9 @@ macOS: `brew install node git`
 ### Clone repo
 
 ```bash
-git clone <URL-REPO> ~/codeclaw
+git clone https://github.com/pmuhammadagus-byte/codeclaw.git ~/codeclaw
 cd ~/codeclaw
+chmod +x cli.js
 ```
 
 Tidak ada `npm install` — zero dependency. Pastikan bisa jalan:
