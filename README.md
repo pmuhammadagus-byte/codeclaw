@@ -6,7 +6,7 @@
 
 Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, macOS, dan WSL. Tanpa dependency NPM — cukup Node.js 22.5+.
 
-- **27 tools** — file ops, shell, git/gh, web, code indexer, todo, memory, research, skills
+- **29 tools** — file ops, shell, git/gh, web, code indexer, todo, memory, research, skills, brain mode
 - **Self-evolving** — agent menyimpan pengalaman sukses jadi skill reusable
 - **Knowledge base** — riset ArXiv + Hacker News masuk SQLite, otomatis di-inject ke prompt
 - **Multi-channel** — REPL terminal dan bot Telegram
@@ -27,10 +27,11 @@ Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, mac
 5. [Setup Telegram](#setup-telegram)
 6. [Perintah CLI](#perintah-cli)
 7. [Perintah REPL](#perintah-repl)
-8. [27 Tools](#27-tools)
-9. [Konfigurasi](#konfigurasi)
-10. [Self-Evolving Skills](#self-evolving-skills)
-11. [Troubleshooting](#troubleshooting)
+8. [29 Tools](#29-tools)
+9. [Brain Level](#brain-level)
+10. [Konfigurasi](#konfigurasi)
+11. [Self-Evolving Skills](#self-evolving-skills)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -210,7 +211,10 @@ Ambil user ID kamu sendiri lewat [@userinfobot](https://t.me/userinfobot). Tanpa
 | `node cli.js channel telegram disallow <id>` | Hapus user dari allowlist |
 | `node cli.js config show` | Tampilkan config (API key dimasking) |
 | `node cli.js config path` | Lokasi `config.json` |
+| `node cli.js config edit` | Petunjuk edit config |
 | `node cli.js config migrate` | Migrasi format config lama |
+| `node cli.js brain status` | Level brain aktif + daftar level |
+| `node cli.js brain set <level>` | Set brain level (`off`/`normal`/`high`/`genius`) |
 | `node cli.js research <topik>` | Riset ArXiv + HN → knowledge base |
 | `node cli.js research stats` | Statistik knowledge base |
 | `node cli.js cron status` | Status cron research |
@@ -236,64 +240,76 @@ Perintah bot Telegram: `/start`, `/clear`, `/todo`, `/mem`, `/status`, `/whoami`
 
 ---
 
-## 27 Tools
+## 29 Tools
 
-**File & kode**
+**File (6):**
+- `read_file` — baca dengan line numbers
+- `write_file` — tulis/overwrite
+- `edit_file` — replace old_text unik
+- `list_dir` — list folder recursive
+- `diff_preview` — preview sebelum write
+- `refactor_multi` — replace di banyak file
 
-| Tool | Fungsi |
+**Shell & Git (4):**
+- `shell` — exec command (git, gh, npm, apt, curl)
+- `install_package` — auto-detect npm/pip/apt/pkg
+- `run_tests` — auto-detect test framework
+- `parse_error` — ekstrak file:line dari stack trace
+
+**Web (2):**
+- `web_fetch` — fetch URL -> text (HTML strip)
+- `web_search` — DuckDuckGo search
+
+**Planning & Memory (3):**
+- `todo_write` — plan multi-step
+- `memory_set` — simpan preferensi
+- `memory_get` — ambil preferensi
+
+**RAG (2):**
+- `index_codebase` — index keyword inverted
+- `search_index` — cari via index
+
+**Snapshot (2):**
+- `branch_save` — snapshot sebelum risky edit
+- `branch_restore` — rollback
+
+**Self-evolving (4):**
+- `skill_save` — simpan skill manual
+- `skill_find` — cari skill relevan
+- `skill_list` — list semua skill
+- `skill_record` — catat success/fail
+
+**Research (3):**
+- `research_topic` — ArXiv + HN + GitHub trending
+- `knowledge_search` — cari di KB
+- `knowledge_add` — simpan catatan
+
+**Brain Mode (2):**
+- `think` — reasoning eksplisit sebelum eksekusi
+- `verify` — buktikan hasil dengan command konkret
+
+**Total: 29 tools**
+
+
+---
+
+## Brain Level
+
+`brainLevel` mengatur seberapa ketat agent berpikir dan memverifikasi. Set lewat CLI:
+
+```bash
+node cli.js brain status
+node cli.js brain set high
+```
+
+| Level | Perilaku |
 |---|---|
-| `read_file` | Baca file dengan line numbers |
-| `write_file` | Tulis / overwrite file |
-| `edit_file` | Replace teks unik di file |
-| `list_dir` | List folder (opsional rekursif) |
-| `search_code` | Grep seluruh codebase |
-| `diff_preview` | Preview diff sebelum menulis |
-| `refactor_multi` | Replace pola di banyak file, ada `dry_run` |
+| `off` | Tanpa ritual. Paling cepat, tanpa verifikasi wajib |
+| `normal` | Pikirkan dulu untuk task kompleks, verifikasi dasar. Default aman |
+| `high` | `think` + `verify` **wajib** untuk task >2 tool call. Direkomendasikan |
+| `genius` | 5 fase (reasoning → planning → execution → verification → reflection) untuk semua task non-trivial |
 
-**Eksekusi & environment**
-
-| Tool | Fungsi |
-|---|---|
-| `shell` | Jalankan command (cwd + timeout) |
-| `install_package` | Install paket, auto-detect manager |
-| `run_tests` | Jalankan test framework |
-| `parse_error` | Ekstrak `file:line` dari stack trace |
-
-**Web & riset**
-
-| Tool | Fungsi |
-|---|---|
-| `web_fetch` | Ambil URL → teks |
-| `web_search` | Cari di DuckDuckGo |
-| `research_topic` | ArXiv + HN + GitHub trending |
-| `knowledge_add` | Simpan insight ke knowledge base |
-| `knowledge_search` | Cari di knowledge base |
-
-**Indexing**
-
-| Tool | Fungsi |
-|---|---|
-| `index_codebase` | Index codebase untuk pencarian cepat |
-| `search_index` | Cari di index |
-
-**State & planning**
-
-| Tool | Fungsi |
-|---|---|
-| `todo_write` | Tambah / update / list / clear todo |
-| `memory_set` | Simpan preferensi user |
-| `memory_get` | Ambil memory |
-| `branch_save` | Snapshot file sebelum edit berisiko |
-| `branch_restore` | Restore snapshot |
-
-**Self-evolving**
-
-| Tool | Fungsi |
-|---|---|
-| `skill_save` | Simpan skill baru |
-| `skill_find` | Cari skill relevan |
-| `skill_list` | Daftar skill + success rate |
-| `skill_record` | Catat hasil pakai skill (success/fail) |
+Level tersimpan di `agent.brainLevel` dan prompt-nya di-inject tiap turn dari `lib/brain.js`.
 
 ---
 
