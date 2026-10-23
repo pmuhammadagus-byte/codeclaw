@@ -1,66 +1,111 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="CodeClaw Pro — coding agent untuk terminal">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-label="CodeClaw Pro — coding agent untuk terminal">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0b1120"/>
-      <stop offset="55%" stop-color="#0f172a"/>
-      <stop offset="100%" stop-color="#111c33"/>
+      <stop offset="0%" stop-color="#050810"/>
+      <stop offset="45%" stop-color="#0a1020"/>
+      <stop offset="100%" stop-color="#0d1526"/>
     </linearGradient>
-    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0.35">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="65%" stop-color="#a5f3fc"/>
+      <stop offset="52%" stop-color="#e0f7fa"/>
       <stop offset="100%" stop-color="#22d3ee"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id="markGrad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#22d3ee"/>
-      <stop offset="50%" stop-color="#818cf8"/>
+      <stop offset="60%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="topLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0"/>
+      <stop offset="28%" stop-color="#22d3ee"/>
+      <stop offset="62%" stop-color="#818cf8"/>
       <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
     </linearGradient>
-    <radialGradient id="glowTR" cx="0.82" cy="0.05" r="0.75">
-      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.30"/>
-      <stop offset="55%" stop-color="#22d3ee" stop-opacity="0.06"/>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.42"/>
+      <stop offset="60%" stop-color="#22d3ee" stop-opacity="0.08"/>
       <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glowBL" cx="0.03" cy="1" r="0.65">
-      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.26"/>
-      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    <radialGradient id="glowB" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.40"/>
+      <stop offset="65%" stop-color="#8b5cf6" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
     </radialGradient>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M40 0H0V40" fill="none" stroke="#94a3b8" stroke-opacity="0.07" stroke-width="1"/>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="1.6" cy="1.6" r="1.1" fill="#7dd3fc" fill-opacity="0.11"/>
     </pattern>
-    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="10"/>
+    <filter id="blurA" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="34"/>
+    </filter>
+    <filter id="textGlow" x="-25%" y="-25%" width="150%" height="170%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="markGlow" x="-45%" y="-45%" width="190%" height="190%">
+      <feDropShadow dx="0" dy="0" stdDeviation="13" flood-color="#22d3ee" flood-opacity="0.55"/>
     </filter>
   </defs>
 
-  <rect width="1280" height="320" fill="url(#bg)"/>
-  <rect width="1280" height="320" fill="url(#grid)"/>
-  <rect width="1280" height="320" fill="url(#glowTR)"/>
-  <rect width="1280" height="320" fill="url(#glowBL)"/>
-  <rect x="0" y="0" width="1280" height="3" fill="url(#accent)"/>
+  <rect width="1280" height="360" fill="url(#bg)"/>
+  <rect width="1280" height="360" fill="url(#dots)"/>
+  <ellipse cx="1090" cy="30" rx="330" ry="250" fill="url(#glowA)" filter="url(#blurA)"/>
+  <ellipse cx="120" cy="370" rx="300" ry="230" fill="url(#glowB)" filter="url(#blurA)"/>
 
-  <g transform="translate(72,112)">
-    <rect x="0" y="0" width="88" height="88" rx="22" fill="#0c1424" stroke="#22d3ee" stroke-opacity="0.55" stroke-width="2"/>
-    <rect x="10" y="10" width="68" height="68" rx="16" fill="#22d3ee" opacity="0.06"/>
-    <path d="M27 34 L43 44 L27 54" fill="none" stroke="#22d3ee" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M51 58 H65" stroke="#a5f3fc" stroke-width="4.5" stroke-linecap="round"/>
+  <g opacity="0.5">
+    <path d="M985 360 L1112 12" stroke="#22d3ee" stroke-opacity="0.20" stroke-width="2"/>
+    <path d="M1030 360 L1157 12" stroke="#22d3ee" stroke-opacity="0.13" stroke-width="2"/>
+    <path d="M1075 360 L1202 12" stroke="#818cf8" stroke-opacity="0.10" stroke-width="2"/>
   </g>
 
-  <text x="196" y="150" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="58" font-weight="700" letter-spacing="-1.2" fill="url(#titleGrad)">CodeClaw Pro</text>
-  <text x="199" y="186" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#94a3b8">Coding agent untuk terminal — Termux · Ubuntu PRoot · Linux · macOS · WSL</text>
+  <rect x="0" y="0" width="1280" height="3" fill="url(#topLine)"/>
 
-  <g font-family="'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace" font-size="12.5" letter-spacing="0.6">
-    <rect x="199" y="216" width="112" height="29" rx="14.5" fill="#0c1424" stroke="#22d3ee" stroke-opacity="0.45"/>
-    <text x="255" y="235" text-anchor="middle" fill="#67e8f9">NODE 22.5+</text>
-
-    <rect x="323" y="216" width="98" height="29" rx="14.5" fill="#0c1424" stroke="#818cf8" stroke-opacity="0.45"/>
-    <text x="372" y="235" text-anchor="middle" fill="#a5b4fc">27 TOOLS</text>
-
-    <rect x="433" y="216" width="106" height="29" rx="14.5" fill="#0c1424" stroke="#34d399" stroke-opacity="0.4"/>
-    <text x="486" y="235" text-anchor="middle" fill="#6ee7b7">ZERO DEPS</text>
-
-    <rect x="551" y="216" width="112" height="29" rx="14.5" fill="#0c1424" stroke="#94a3b8" stroke-opacity="0.35"/>
-    <text x="607" y="235" text-anchor="middle" fill="#cbd5e1">MIT LICENSE</text>
+  <g transform="translate(74,118)" filter="url(#markGlow)">
+    <rect width="112" height="112" rx="27" fill="#0a1424" stroke="#22d3ee" stroke-opacity="0.5" stroke-width="2"/>
+    <rect x="11" y="11" width="90" height="90" rx="19" fill="#22d3ee" fill-opacity="0.05"/>
+    <g stroke="url(#markGrad)" stroke-width="7" stroke-linecap="round" fill="none">
+      <path d="M36 34 L52 56"/>
+      <path d="M54 32 L70 54"/>
+      <path d="M72 30 L88 52"/>
+    </g>
+    <path d="M34 76 Q56 94 78 74" stroke="#67e8f9" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.85"/>
   </g>
 
-  <text x="1208" y="288" text-anchor="end" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="13.5" fill="#475569">github.com/pmuhammadagus-byte/codeclaw</text>
+  <text x="216" y="164" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="62" font-weight="800" letter-spacing="-1.6" fill="url(#titleGrad)" filter="url(#textGlow)">CodeClaw Pro</text>
+  <rect x="218" y="180" width="150" height="3" rx="1.5" fill="url(#rule)"/>
+  <text x="219" y="212" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="18.5" fill="#93a4bd">Coding agent untuk terminal — Termux · PRoot · Linux · macOS · WSL</text>
+
+  <g font-family="'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace" font-size="12.5" letter-spacing="0.7">
+    <g>
+      <rect x="218" y="244" width="122" height="31" rx="15.5" fill="#0b1626" stroke="#22d3ee" stroke-opacity="0.45"/>
+      <circle cx="237" cy="259.5" r="3.5" fill="#22d3ee"/>
+      <text x="249" y="264" fill="#7dd3fc">NODE 22.5+</text>
+    </g>
+    <g>
+      <rect x="350" y="244" width="106" height="31" rx="15.5" fill="#0b1626" stroke="#818cf8" stroke-opacity="0.45"/>
+      <circle cx="369" cy="259.5" r="3.5" fill="#818cf8"/>
+      <text x="381" y="264" fill="#a5b4fc">27 TOOLS</text>
+    </g>
+    <g>
+      <rect x="466" y="244" width="116" height="31" rx="15.5" fill="#0b1626" stroke="#34d399" stroke-opacity="0.42"/>
+      <circle cx="485" cy="259.5" r="3.5" fill="#34d399"/>
+      <text x="497" y="264" fill="#6ee7b7">ZERO DEPS</text>
+    </g>
+    <g>
+      <rect x="592" y="244" width="136" height="31" rx="15.5" fill="#0b1626" stroke="#94a3b8" stroke-opacity="0.32"/>
+      <circle cx="611" cy="259.5" r="3.5" fill="#94a3b8"/>
+      <text x="623" y="264" fill="#cbd5e1">MIT LICENSE</text>
+    </g>
+  </g>
+
+  <g opacity="0.85">
+    <text x="1206" y="300" text-anchor="end" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="13" fill="#3f5170">github.com/pmuhammadagus-byte/codeclaw</text>
+    <text x="1206" y="322" text-anchor="end" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#2c3a55">v1 · built for the shell</text>
+  </g>
 </svg>

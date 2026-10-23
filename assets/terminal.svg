@@ -1,67 +1,139 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-label="Contoh sesi CodeClaw Pro di terminal">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-label="Contoh sesi CodeClaw Pro di terminal">
   <defs>
     <clipPath id="win">
-      <rect x="0" y="0" width="1200" height="560" rx="14"/>
+      <rect width="1200" height="600" rx="16"/>
     </clipPath>
     <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1e293b"/>
-      <stop offset="100%" stop-color="#172033"/>
+      <stop offset="0%" stop-color="#1c2740"/>
+      <stop offset="100%" stop-color="#141d30"/>
     </linearGradient>
-    <radialGradient id="bodyGlow" cx="0.15" cy="0" r="0.9">
-      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.07"/>
+    <linearGradient id="body" x1="0" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#080c16"/>
+      <stop offset="60%" stop-color="#0b111d"/>
+      <stop offset="100%" stop-color="#0d1524"/>
+    </linearGradient>
+    <linearGradient id="statusBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#111a2c"/>
+      <stop offset="100%" stop-color="#0e1626"/>
+    </linearGradient>
+    <radialGradient id="termGlow" cx="0.12" cy="0.02" r="0.75">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.10"/>
       <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
     </radialGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#000000" flood-opacity="0.55"/>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.55"/>
+      <stop offset="45%" stop-color="#334155" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="prog" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <filter id="winShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="26" flood-color="#000000" flood-opacity="0.7"/>
+    </filter>
+    <filter id="dotGlow" x="-150%" y="-150%" width="400%" height="400%">
+      <feGaussianBlur stdDeviation="2.6" result="g"/>
+      <feMerge>
+        <feMergeNode in="g"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   </defs>
 
-  <rect x="6" y="6" width="1188" height="548" rx="14" fill="#000000" opacity="0.35" filter="url(#shadow)"/>
+  <rect x="7" y="10" width="1186" height="582" rx="16" fill="#000" opacity="0.4" filter="url(#winShadow)"/>
 
   <g clip-path="url(#win)">
-    <rect width="1200" height="560" fill="#0d1117"/>
-    <rect width="1200" height="560" fill="url(#bodyGlow)"/>
-    <rect width="1200" height="46" fill="url(#chrome)"/>
-    <rect y="45" width="1200" height="1" fill="#243044"/>
+    <rect width="1200" height="600" fill="url(#body)"/>
+    <rect width="1200" height="600" fill="url(#termGlow)"/>
 
-    <circle cx="26" cy="23" r="6.5" fill="#ff5f57"/>
-    <circle cx="48" cy="23" r="6.5" fill="#febc2e"/>
-    <circle cx="70" cy="23" r="6.5" fill="#28c840"/>
-    <text x="600" y="28" text-anchor="middle" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="13" fill="#64748b">codeclaw — bash — 88×24</text>
+    <rect width="1200" height="52" fill="url(#chrome)"/>
+    <rect y="51" width="1200" height="1" fill="#26344c"/>
+    <circle cx="28" cy="26" r="7" fill="#ff5f57"/>
+    <circle cx="52" cy="26" r="7" fill="#febc2e"/>
+    <circle cx="76" cy="26" r="7" fill="#28c840"/>
+
+    <g>
+      <rect x="108" y="12" width="168" height="28" rx="8" fill="#0b1424" stroke="#24344f"/>
+      <circle cx="126" cy="26" r="4" fill="#22d3ee" filter="url(#dotGlow)"/>
+      <text x="138" y="31" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12.5" fill="#8fa3bf">codeclaw — bash</text>
+      <text x="292" y="31" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12.5" fill="#3d4d68">zsh</text>
+    </g>
+    <text x="1172" y="31" text-anchor="end" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#3d4d68">~/codeclaw</text>
 
     <g font-family="'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace" font-size="17">
-      <text x="40" y="94" fill="#4ade80">$<tspan fill="#e2e8f0" dx="11">git clone https://github.com/pmuhammadagus-byte/codeclaw.git</tspan></text>
-      <text x="40" y="124" fill="#64748b">Cloning into 'codeclaw'...</text>
-      <text x="40" y="154" fill="#64748b">done.</text>
+      <g>
+        <text x="44" y="102" fill="#4ade80">❯</text>
+        <text x="68" y="102" fill="#cbd5e1">git clone</text>
+        <text x="168" y="102" fill="#7dd3fc">https://github.com/pmuhammadagus-byte/codeclaw.git</text>
+      </g>
+      <text x="68" y="130" fill="#44546e">Cloning into 'codeclaw'... done.</text>
 
-      <text x="40" y="214" fill="#4ade80">$<tspan fill="#e2e8f0" dx="11">cd codeclaw &amp;&amp; node cli.js start</tspan></text>
+      <g>
+        <text x="44" y="186" fill="#4ade80">❯</text>
+        <text x="68" y="186" fill="#cbd5e1">cd codeclaw &amp;&amp;</text>
+        <text x="240" y="186" fill="#c4b5fd">node cli.js start</text>
+      </g>
 
-      <text x="40" y="274" fill="#22d3ee">CodeClaw Pro</text>
-      <text x="176" y="274" fill="#475569">·</text>
-      <text x="196" y="274" fill="#94a3b8">custom/glm-5.3</text>
+      <rect x="44" y="208" width="1112" height="1" fill="#1b2740"/>
 
-      <text x="40" y="334" fill="#67e8f9">›</text>
-      <text x="64" y="334" fill="#f1f5f9">tambah endpoint login di server.js</text>
+      <g>
+        <text x="44" y="252" font-size="20" font-weight="700" fill="#22d3ee">CodeClaw Pro</text>
+        <rect x="220" y="238" width="1" height="18" fill="#2b3a55"/>
+        <text x="238" y="252" font-size="15" fill="#7c8cab">model</text>
+        <text x="292" y="252" font-size="15" fill="#a5b4fc">custom/glm-5.3</text>
+        <text x="1130" y="252" font-size="13" text-anchor="end" fill="#3d4d68">27 tools loaded</text>
+      </g>
 
-      <text x="64" y="366" fill="#22d3ee">●</text>
-      <text x="88" y="366" fill="#67e8f9">read_file</text>
-      <text x="250" y="366" fill="#94a3b8">server.js</text>
+      <g>
+        <text x="44" y="316" font-size="18" fill="#22d3ee">›</text>
+        <text x="72" y="316" fill="#f1f5f9">tambah endpoint login di server.js</text>
+      </g>
 
-      <text x="64" y="396" fill="#22d3ee">●</text>
-      <text x="88" y="396" fill="#67e8f9">edit_file</text>
-      <text x="250" y="396" fill="#94a3b8">+18 lines</text>
+      <g font-size="16">
+        <circle cx="50" cy="354" r="4" fill="#22d3ee" filter="url(#dotGlow)"/>
+        <text x="70" y="360" fill="#67e8f9">read_file</text>
+        <text x="180" y="360" fill="#5b6c88">server.js</text>
+        <text x="1130" y="360" text-anchor="end" fill="#3d4d68">12ms</text>
 
-      <text x="64" y="426" fill="#22d3ee">●</text>
-      <text x="88" y="426" fill="#67e8f9">shell</text>
-      <text x="250" y="426" fill="#94a3b8">npm test</text>
-      <text x="358" y="426" fill="#4ade80">✓ 12 passed</text>
+        <circle cx="50" cy="392" r="4" fill="#22d3ee" filter="url(#dotGlow)"/>
+        <text x="70" y="398" fill="#67e8f9">edit_file</text>
+        <text x="180" y="398" fill="#5b6c88">server.js</text>
+        <text x="298" y="398" fill="#4ade80">+18</text>
+        <text x="336" y="398" fill="#f87171">−3</text>
+        <text x="1130" y="398" text-anchor="end" fill="#3d4d68">88ms</text>
 
-      <text x="40" y="486" fill="#4ade80">✓ Selesai — 1 file diubah.</text>
+        <circle cx="50" cy="430" r="4" fill="#22d3ee" filter="url(#dotGlow)"/>
+        <text x="70" y="436" fill="#67e8f9">shell</text>
+        <text x="180" y="436" fill="#5b6c88">npm test</text>
+        <text x="298" y="436" fill="#4ade80">✓ 12 passed</text>
+        <text x="1130" y="436" text-anchor="end" fill="#3d4d68">1.2s</text>
+      </g>
 
-      <text x="40" y="524" fill="#4ade80">$</text>
-      <rect x="58" y="509" width="10" height="19" fill="#22d3ee" opacity="0.85"/>
+      <rect x="44" y="466" width="1112" height="1" fill="#1b2740"/>
+
+      <g>
+        <text x="44" y="508" font-size="17" fill="#4ade80">✓</text>
+        <text x="68" y="508" font-size="17" fill="#d7e3f4">Selesai — 1 file diubah, semua test lulus.</text>
+      </g>
+
+      <g>
+        <text x="44" y="556" fill="#4ade80">❯</text>
+        <rect x="70" y="541" width="11" height="20" fill="#22d3ee" opacity="0.9">
+          <animate attributeName="opacity" values="0.9;0.15;0.9" dur="1.2s" repeatCount="indefinite"/>
+        </rect>
+      </g>
     </g>
+
+    <rect y="572" width="1200" height="28" fill="url(#statusBg)"/>
+    <rect y="572" width="1200" height="1" fill="#1e2b42"/>
+    <text x="44" y="591" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#3d4d68">NORMAL</text>
+    <text x="112" y="591" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#22d3ee">main</text>
+    <text x="152" y="591" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#3d4d68">utf-8 · node 22.5</text>
+    <rect x="1084" y="580" width="72" height="6" rx="3" fill="#1b2740"/>
+    <rect x="1084" y="580" width="48" height="6" rx="3" fill="url(#prog)"/>
+    <text x="1172" y="591" text-anchor="end" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#3d4d68">42%</text>
   </g>
 
-  <rect x="1" y="1" width="1198" height="558" rx="14" fill="none" stroke="#243044" stroke-width="2"/>
+  <rect x="1" y="1" width="1198" height="598" rx="16" fill="none" stroke="url(#edge)" stroke-width="1.6"/>
 </svg>
