@@ -1,5 +1,9 @@
 # CodeClaw Pro
 
+<p align="center">
+  <img src="assets/banner.svg" alt="CodeClaw Pro — coding agent untuk terminal" width="100%">
+</p>
+
 Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, macOS, dan WSL. Tanpa dependency NPM — cukup Node.js 22.5+.
 
 - **27 tools** — file ops, shell, git/gh, web, code indexer, todo, memory, research, skills
@@ -7,6 +11,10 @@ Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, mac
 - **Knowledge base** — riset ArXiv + Hacker News masuk SQLite, otomatis di-inject ke prompt
 - **Multi-channel** — REPL terminal dan bot Telegram
 - **Multi-provider** — format `models.providers`, kompatibel API OpenAI
+
+<p align="center">
+  <img src="assets/terminal.svg" alt="Contoh sesi CodeClaw Pro" width="88%">
+</p>
 
 ---
 

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="CodeClaw Pro — coding agent untuk terminal">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1120"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111c33"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="65%" stop-color="#a5f3fc"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="50%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glowTR" cx="0.82" cy="0.05" r="0.75">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.30"/>
+      <stop offset="55%" stop-color="#22d3ee" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowBL" cx="0.03" cy="1" r="0.65">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.26"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#94a3b8" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="320" fill="url(#bg)"/>
+  <rect width="1280" height="320" fill="url(#grid)"/>
+  <rect width="1280" height="320" fill="url(#glowTR)"/>
+  <rect width="1280" height="320" fill="url(#glowBL)"/>
+  <rect x="0" y="0" width="1280" height="3" fill="url(#accent)"/>
+
+  <g transform="translate(72,112)">
+    <rect x="0" y="0" width="88" height="88" rx="22" fill="#0c1424" stroke="#22d3ee" stroke-opacity="0.55" stroke-width="2"/>
+    <rect x="10" y="10" width="68" height="68" rx="16" fill="#22d3ee" opacity="0.06"/>
+    <path d="M27 34 L43 44 L27 54" fill="none" stroke="#22d3ee" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M51 58 H65" stroke="#a5f3fc" stroke-width="4.5" stroke-linecap="round"/>
+  </g>
+
+  <text x="196" y="150" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="58" font-weight="700" letter-spacing="-1.2" fill="url(#titleGrad)">CodeClaw Pro</text>
+  <text x="199" y="186" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#94a3b8">Coding agent untuk terminal — Termux · Ubuntu PRoot · Linux · macOS · WSL</text>
+
+  <g font-family="'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace" font-size="12.5" letter-spacing="0.6">
+    <rect x="199" y="216" width="112" height="29" rx="14.5" fill="#0c1424" stroke="#22d3ee" stroke-opacity="0.45"/>
+    <text x="255" y="235" text-anchor="middle" fill="#67e8f9">NODE 22.5+</text>
+
+    <rect x="323" y="216" width="98" height="29" rx="14.5" fill="#0c1424" stroke="#818cf8" stroke-opacity="0.45"/>
+    <text x="372" y="235" text-anchor="middle" fill="#a5b4fc">27 TOOLS</text>
+
+    <rect x="433" y="216" width="106" height="29" rx="14.5" fill="#0c1424" stroke="#34d399" stroke-opacity="0.4"/>
+    <text x="486" y="235" text-anchor="middle" fill="#6ee7b7">ZERO DEPS</text>
+
+    <rect x="551" y="216" width="112" height="29" rx="14.5" fill="#0c1424" stroke="#94a3b8" stroke-opacity="0.35"/>
+    <text x="607" y="235" text-anchor="middle" fill="#cbd5e1">MIT LICENSE</text>
+  </g>
+
+  <text x="1208" y="288" text-anchor="end" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="13.5" fill="#475569">github.com/pmuhammadagus-byte/codeclaw</text>
+</svg>
