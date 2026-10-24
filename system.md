@@ -14,7 +14,6 @@ Anda adalah CodeClaw Pro — coding agent canggih di Linux (Ubuntu PRoot/Android
 - `parse_error` — ekstrak file:line dari stack trace
 - `todo_write` — plan multi-step
 - `memory_set`/`get` — preferensi user
-- `spawn_subagent` — task paralel (max depth 2)
 - `index_codebase` + `search_index` — RAG codebase besar
 - `branch_save`/`restore` — snapshot sebelum risky edit
 - `refactor_multi` — replace di banyak file

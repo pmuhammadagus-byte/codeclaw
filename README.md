@@ -242,11 +242,12 @@ Perintah bot Telegram: `/start`, `/clear`, `/todo`, `/mem`, `/status`, `/whoami`
 
 ## 29 Tools
 
-**File (6):**
+**File & kode (7):**
 - `read_file` — baca dengan line numbers
 - `write_file` — tulis/overwrite
 - `edit_file` — replace old_text unik
 - `list_dir` — list folder recursive
+- `search_code` — grep seluruh codebase
 - `diff_preview` — preview sebelum write
 - `refactor_multi` — replace di banyak file
 
@@ -290,7 +291,6 @@ Perintah bot Telegram: `/start`, `/clear`, `/todo`, `/mem`, `/status`, `/whoami`
 
 **Total: 29 tools**
 
-
 ---
 
 ## Brain Level
@@ -328,7 +328,8 @@ Level tersimpan di `agent.brainLevel` dan prompt-nya di-inject tiap turn dari `l
     "contextWindow": 80,
     "approvalMode": "dangerous-only",
     "maxSubagentDepth": 2,
-    "maxSubagentIterations": 15
+    "maxSubagentIterations": 15,
+    "brainLevel": "high"
   },
   "research": { "enabled": false, "topics": [], "sources": ["arxiv", "hn"] }
 }
@@ -336,6 +337,7 @@ Level tersimpan di `agent.brainLevel` dan prompt-nya di-inject tiap turn dari `l
 
 - `agent.approvalMode` — `dangerous-only` minta konfirmasi hanya untuk command berisiko
 - `agent.maxToolIterations` — batas loop tool call per turn
+- `agent.brainLevel` — `off` / `normal` / `high` / `genius`, lihat [Brain Level](#brain-level)
 - `systemPromptFile` — file prompt sistem, default `system.md`
 
 File yang tidak ikut ke git: `config.json`, `data.db`, `knowledge.db`, `skills/`, `.branches/`, `downloads/`.

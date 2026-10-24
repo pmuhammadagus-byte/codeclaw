@@ -99,6 +99,17 @@ async function runTurn(userInput) {
     session.add(CHAT_ID, message);
 
     if (finishReason === "tool_calls" || message.tool_calls?.length) {
+      // Deteksi loop
+      const recentCalls = session.history(CHAT_ID, 20)
+        .filter(m => m.role === "assistant" && m.tool_calls)
+        .slice(-3)
+        .flatMap(m => m.tool_calls.map(tc => `${tc.function.name}:${tc.function.arguments}`));
+      const currentCalls = (message.tool_calls ?? []).map(tc => `${tc.function.name}:${tc.function.arguments}`);
+      if (currentCalls.some(c => recentCalls.filter(r => r === c).length >= 2)) {
+        console.log(`${C.yellow}⚠ Loop terdeteksi — agent stuck. Coba prompt lebih spesifik.${C.reset}`);
+        return;
+      }
+      
       for (const tc of message.tool_calls ?? []) {
         let args; try { args = JSON.parse(tc.function.arguments || "{}"); } catch { args = {}; }
         console.log(`${C.dim}🔧 ${tc.function.name}(${Object.keys(args).join(", ")})${C.reset}`);

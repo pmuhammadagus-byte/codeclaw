@@ -51,6 +51,19 @@ const ALLOWED = new Set(CONFIG.telegram.allowedUserIds.map(Number));
 const log = (...a) => console.log(`[${new Date().toISOString()}]`, ...a);
 
 // === Markdown → Telegram HTML ===
+function isGarbageOutput(text) {
+  if (!text || text.length < 10) return false;
+  const htmlTags = (text.match(/<\/?[a-z][^>]*>/gi) || []).length;
+  if (htmlTags > 5) return true;
+  if ((text.match(/\[\[\[|\]\]\]|>>>|<<<|###|@@@/g) || []).length > 3) return true;
+  const cyrillic = (text.match(/[\u0400-\u04FF]/g) || []).length;
+  const chinese = (text.match(/[\u4E00-\u9FFF]/g) || []).length;
+  if (cyrillic > 20 || chinese > 20) return true;
+  if (/<\/?think>/i.test(text) && text.length > 500) return true;
+  if ((text.match(/\\x[0-9a-f]{2}/gi) || []).length > 10) return true;
+  return false;
+}
+
 function mdToHtml(text) {
   if (!text) return "";
   let s = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -216,6 +229,29 @@ async function processMessage(chatId, userInput, from) {
 
     if (finishReason === "tool_calls" || message.tool_calls?.length) {
       const currentIter = iter + 1;
+      
+      // Deteksi loop: kalau tool yang sama dipanggil dengan args sama >3x
+      const history = session.history(chatId, 20);
+      const recentToolCalls = history
+        .filter(m => m.role === "assistant" && m.tool_calls)
+        .slice(-3)
+        .flatMap(m => m.tool_calls.map(tc => `${tc.function.name}:${tc.function.arguments}`));
+      const currentCalls = (message.tool_calls ?? []).map(tc => `${tc.function.name}:${tc.function.arguments}`);
+      const loopDetected = currentCalls.some(c => recentToolCalls.filter(r => r === c).length >= 2);
+      
+      if (loopDetected) {
+        log(`Loop detected — breaking`);
+        await sendText(chatId, 
+          `⚠️ *Loop terdeteksi*\n\n` +
+          `Agent stuck memanggil tool yang sama berkali-kali tanpa progress.\n\n` +
+          `*Kemungkinan penyebab:*\n` +
+          `• Tool gagal berulang (cek path/permission)\n` +
+          `• Model tidak paham output tool\n` +
+          `• Task terlalu abstrak\n\n` +
+          `*Saran:* pecah jadi langkah lebih kecil, atau kirim error spesifik.`);
+        return;
+      }
+      
       for (const tc of message.tool_calls ?? []) {
         let args; try { args = JSON.parse(tc.function.arguments || "{}"); } catch { args = {}; }
         const entry = { name: tc.function.name, args, status: "running" };
@@ -234,6 +270,14 @@ async function processMessage(chatId, userInput, from) {
         session.add(chatId, { role: "tool", tool_call_id: tc.id, name: tc.function.name, content: toolResult });
       }
       continue;
+    }
+
+    if (isGarbageOutput(responseText)) {
+      log("garbage output detected: " + responseText.length + " chars");
+      session.add(chatId, { role: "assistant", content: "[output rusak - diabaikan]" });
+      const msg = "Model mengeluarkan output rusak. Coba lagi dengan prompt lebih spesifik, atau ketik /clear untuk reset.";
+      await tg.sendMessage(chatId, msg).catch(() => {});
+      return;
     }
 
     if (responseText.trim()) await sendText(chatId, responseText);
