@@ -7,6 +7,10 @@
     "start": "node index.js",
     "tg": "node telegram.js"
   },
-  "engines": { "node": ">=22.5.0" },
-  "dependencies": {}
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "undici": "^8.12.3"
+  }
 }

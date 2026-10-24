@@ -379,6 +379,46 @@ async function handleFile(chatId, message) {
   } catch (e) { return { error: e.message }; }
 }
 
+
+async function transcribeAudio(filePath) {
+  const apiKey = CONFIG.raw.audio?.groqApiKey || process.env.GROQ_API_KEY;
+  if (!apiKey) return "[Voice note diterima, tapi GROQ_API_KEY belum diset di config.json]";
+  try {
+    const fileBlob = new Blob([fs.readFileSync(filePath)], { type: 'audio/ogg' });
+    const form = new FormData();
+    form.append('file', fileBlob, 'audio.ogg');
+    form.append('model', 'whisper-large-v3-turbo');
+    const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${apiKey}` },
+      body: form
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return data.text || "[Gagal transkripsi]";
+  } catch (e) { return `[Error transkripsi: ${e.message}]`; }
+}
+
+async function processImage(chatId, text, imagePath, from) {
+  const b64 = fs.readFileSync(imagePath).toString("base64");
+  const userContent = [
+    { type: "text", text: text || "Tolong jelaskan gambar ini." },
+    { type: "image_url", image_url: { url: `data:image/jpeg;base64,${b64}` } }
+  ];
+  const messages = [ { role: "system", content: buildSystem(chatId) }, { role: "user", content: userContent } ];
+  let responseText = "";
+  const typing = setInterval(() => tg.sendChatAction(chatId).catch(() => {}), 4500);
+  tg.sendChatAction(chatId).catch(() => {});
+  try {
+    const res = await llm.chat({ messages, tools: TOOL_DEFINITIONS, onStream: c => responseText += c });
+    session.add(chatId, { role: "user", content: text || "[Gambar]" });
+    session.add(chatId, res.message);
+    if (responseText.trim()) await sendText(chatId, responseText);
+    else await tg.sendMessage(chatId, "(no response)").catch(() => {});
+  } catch (e) { await sendText(chatId, `❌ Gagal memproses gambar: ${e.message}`); }
+  finally { clearInterval(typing); }
+}
+
 async function main() {
   log("Starting CodeClaw Pro Telegram...");
   fs.writeFileSync(PID_FILE, String(process.pid));
@@ -419,6 +459,19 @@ async function main() {
         }
         log(`[${from.id}] ${text.slice(0, 80)}`);
         try {
+          if (m.voice) {
+            const dest = path.join(DL_DIR, `voice_${Date.now()}.ogg`);
+            await tg.downloadFile(m.voice.file_id, dest);
+            const transcript = await transcribeAudio(dest);
+            await processMessage(chatId, transcript, from);
+            continue;
+          }
+          if (m.photo) {
+            const dest = path.join(DL_DIR, `photo_${Date.now()}.jpg`);
+            await tg.downloadFile(m.photo[m.photo.length - 1].file_id, dest);
+            await processImage(chatId, m.caption || "", dest, from);
+            continue;
+          }
           const file = await handleFile(chatId, m);
           if (file) {
             if (file.error) await tg.sendMessage(chatId, `❌ ${file.error}`);
