@@ -21,6 +21,8 @@ const BASE_SYSTEM = [
   loadFileIfExists("system.md"),
 ].filter(Boolean).join("\n\n---\n\n");
 const DB_PATH = path.join(__dirname, "data.db");
+const PID_FILE = path.join(__dirname, "telegram.pid");
+const HEALTH_FILE = path.join(__dirname, ".health");
 const DL_DIR = path.join(__dirname, "downloads");
 fs.mkdirSync(DL_DIR, { recursive: true });
 
@@ -222,7 +224,23 @@ async function processMessage(chatId, userInput, from) {
     let result;
     try {
       result = await llm.chat({ messages, tools: TOOL_DEFINITIONS, onStream: (c) => { responseText += c; } });
+    } catch (e) {
+      // llm.js sudah retry 3x. Kalau tetap gagal, jangan sampai user cuma dapat
+      // "fetch failed" mentah — kasih konteks + sisa history tetap konsisten.
+      log(`llm err: ${e.message}`);
+      const detail = String(e.message || "");
+      const isNet = /fetch gagal|ECONN|ETIMEDOUT|ENOTFOUND|socket hang up|LLM request gagal/i.test(detail);
+      await sendText(chatId,
+        isNet
+          ? `🌐 *Koneksi ke model gagal*\n\n` +
+            `Sudah dicoba otomatis beberapa kali, tetap tidak tembus.\n\n` +
+            `\`${escapeHtml(detail.slice(0, 300))}\`\n\n` +
+            `*Cek:* provider hidup? (\`/status\`), lalu kirim ulang.`
+          : `❌ *Model error*\n\n\`${escapeHtml(detail.slice(0, 300))}\``
+      ).catch(() => {});
+      return;
     } finally { clearInterval(typing); }
+
 
     const { message, finishReason } = result;
     session.add(chatId, message);
@@ -237,7 +255,7 @@ async function processMessage(chatId, userInput, from) {
         .slice(-3)
         .flatMap(m => m.tool_calls.map(tc => `${tc.function.name}:${tc.function.arguments}`));
       const currentCalls = (message.tool_calls ?? []).map(tc => `${tc.function.name}:${tc.function.arguments}`);
-      const loopDetected = currentCalls.some(c => recentToolCalls.filter(r => r === c).length >= 2);
+      const loopDetected = currentCalls.some(c => recentToolCalls.filter(r => r === c).length >= 3);
       
       if (loopDetected) {
         log(`Loop detected — breaking`);
@@ -363,13 +381,29 @@ async function handleFile(chatId, message) {
 
 async function main() {
   log("Starting CodeClaw Pro Telegram...");
+  fs.writeFileSync(PID_FILE, String(process.pid));
   log(`Model: ${CONFIG.llm.modelRef}`);
-  const me = await tg.getMe();
+  let me;
+  try {
+    me = await tg.getMe();
+  } catch (e) {
+    log(`Fatal: getMe gagal — ${e.message}`);
+    cleanupAndExit(1);
+    return;
+  }
   log(`Bot: @${me.username} | Brain: ${CONFIG.agent.brainLevel || "normal"} | PID ${process.pid}`);
   log(ALLOWED.size ? `Allowlist: ${[...ALLOWED].join(",")}` : "⚠️  Allowlist kosong — semua user bisa pakai");
 
+  // Heartbeat independen dari poll loop. Timer tetap jalan walau proses LLM
+  // sedang blocking berjam-jam, jadi watchdog tidak salah kira hang.
+  fs.writeFileSync(HEALTH_FILE, String(Date.now()));
+  const heartbeat = setInterval(() => {
+    try { fs.writeFileSync(HEALTH_FILE, String(Date.now())); } catch {}
+  }, 15_000);
+  heartbeat.unref?.();
+
   let offset = 0, errors = 0;
-  while (true) {
+  while (!shuttingDown) {
     try {
       const updates = await tg.getUpdates(offset, CONFIG.telegram.pollTimeout ?? 30);
       errors = 0;
@@ -397,17 +431,55 @@ async function main() {
           await processMessage(chatId, text, from);
         } catch (e) {
           log(`err: ${e.message}`);
-          await sendText(chatId, `❌ ${e.message}`).catch(() => {});
+          await sendText(chatId, `❌ ${escapeHtml(e.message)}`).catch(() => {});
         }
       }
     } catch (e) {
+      if (shuttingDown) break;
       errors++;
-      log(`poll err #${errors}: ${e.message}`);
-      await new Promise(r => setTimeout(r, Math.min(30_000, 1000 * 2 ** errors)));
+      const delay = Math.min(30_000, 1000 * 2 ** Math.min(errors, 5));
+      log(`poll err #${errors}: ${e.message} — retry in ${delay / 1000}s`);
+      await new Promise((r) => setTimeout(r, delay));
     }
   }
 }
 
-process.on("SIGINT", () => { session.close(); process.exit(0); });
-process.on("SIGTERM", () => { session.close(); process.exit(0); });
-main().catch((e) => { log(`Fatal: ${e.message}`); process.exit(1); });
+// --- Lapis 3: jangan biarkan satu error acak mematikan bot ---
+let shuttingDown = false;
+let crashCount = 0;
+let crashWindowStart = Date.now();
+
+function cleanupAndExit(code) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  try { fs.rmSync(PID_FILE, { force: true }); } catch {}
+  try { session.close(); } catch {}
+  process.exit(code);
+}
+
+process.on("SIGINT", () => cleanupAndExit(0));
+process.on("SIGTERM", () => cleanupAndExit(0));
+
+process.on("unhandledRejection", (reason) => {
+  const msg = reason instanceof Error ? (reason.stack || reason.message) : String(reason);
+  log(`⚠️ unhandledRejection (diabaikan, bot lanjut): ${msg.slice(0, 500)}`);
+});
+
+process.on("uncaughtException", (err) => {
+  log(`⚠️ uncaughtException: ${(err?.stack || err?.message || err).toString().slice(0, 500)}`);
+  // Error non-fatal (network, parse) tidak boleh membunuh proses.
+  // Kalau error berulang dalam waktu singkat, baru menyerah ke supervisor.
+  const now = Date.now();
+  if (now - crashWindowStart > 60_000) { crashWindowStart = now; crashCount = 0; }
+  crashCount++;
+  if (crashCount > 10) {
+    log("❌ Terlalu banyak crash dalam 60s — keluar supaya supervisor restart");
+    cleanupAndExit(1);
+  }
+});
+
+main().catch((e) => {
+  log(`Fatal: ${e.message}`);
+  cleanupAndExit(1);
+});
+

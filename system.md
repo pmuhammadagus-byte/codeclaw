@@ -33,3 +33,11 @@ Push: `shell "cd REPO && git push"`
 ## SELF-EVOLVING
 Setelah task kompleks (>4 tool call) sukses, sistem otomatis distill jadi skill.
 Skill relevan otomatis di-inject ke prompt untuk task berikutnya.
+
+## ATURAN TOOL CALLING (WAJIB)
+
+- Panggil SATU tool per iterasi, tunggu hasilnya, baru putuskan langkah berikutnya
+- JANGAN panggil tool yang sama dengan argumen yang sama 2x. Kalau gagal, ubah argumen atau pendekatan
+- Setelah tool sukses, ringkas hasilnya dan lanjut ke langkah berikutnya
+- Kalau tool gagal 2x, hentikan dan laporkan ke user (jangan retry terus)
+- Jangan panggil tool hanya untuk "verifikasi" yang sudah jelas — langsung selesai

@@ -1,15 +1,29 @@
-node_modules/
+# === SECRETS / AUTH (JANGAN DI-PUSH) ===
+config.json
+config.json.*
+.env
+.auth
+.supabase/
+.vercel/
+.config/gh/
+
+# === Database & Runtime ===
 data.db*
 index.db*
+knowledge.db*
 downloads/
 .branches/
-config.json
-*.log
 skills/
-knowledge.db*
+*.log
+*.pid
 cron.log
+watchdog.log
+watchdog-counter.txt
 
-# Backup files — jangan commit
+# === Node & OS ===
+node_modules/
+.DS_Store
+
+# === Backup files ===
 *.bak
 *.bak.*
-test-*.js
