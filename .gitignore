@@ -27,3 +27,8 @@ node_modules/
 # === Backup files ===
 *.bak
 *.bak.*
+
+# Runtime files (jangan di-push)
+*.pid
+.health
+config.json
