@@ -7,6 +7,7 @@ import { TOOL_DEFINITIONS, executeTool } from "./lib/tools.js";
 import { TelegramAPI } from "./lib/telegram-api.js";
 import { todoSection } from "./lib/planner.js";
 import { memorySection } from "./lib/memory.js";
+import { distillSkill, improveSkill, autoImproveFailingSkills, isComplexTask } from "./lib/skill-distiller.js";
 import { loadConfig, migrateIfNeeded } from "./lib/config.js";
 import { getBrainPrompt } from "./lib/brain.js";
 
@@ -201,6 +202,8 @@ async function processMessage(chatId, userInput, from) {
 
   const toolActivity = [];
   let statusMsgId = null;
+  const usedSkillIds = new Set();
+  let lastMessages = [];
   const updateToolStatus = async (iteration) => {
     const html = renderToolStatus(toolActivity, iteration, CONFIG.agent.maxToolIterations);
     try {
