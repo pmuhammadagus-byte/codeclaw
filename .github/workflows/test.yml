@@ -14,8 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test (Node ${{ matrix.node }})
+  # Test suite utama CodeClaw Pro (root project).
+  test-codeclaw:
+    name: CodeClaw (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -35,7 +36,39 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
-          cache-dependency-path: 'root/todo-api/package-lock.json'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  # REST API Todo List (Express) di sub-folder root/todo-api.
+  test-todo-api:
+    name: Todo API (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: root/todo-api
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: root/todo-api/package-lock.json
 
       - name: Install dependencies
         run: npm ci
