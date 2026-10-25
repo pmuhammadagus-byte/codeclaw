@@ -1,39 +1,82 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-label="Contoh sesi CodeClaw Pro di terminal">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-label="CodeClaw di terminal hacker bergaya jendela macOS dengan teks neon">
   <defs>
-    <clipPath id="win">
-      <rect width="1200" height="600" rx="16"/>
+    <clipPath id="winClip">
+      <rect x="28" y="24" width="1144" height="552" rx="14"/>
     </clipPath>
-    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1c2740"/>
-      <stop offset="100%" stop-color="#141d30"/>
+
+    <!-- Jendela -->
+    <linearGradient id="chromeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2436"/>
+      <stop offset="100%" stop-color="#121a28"/>
     </linearGradient>
-    <linearGradient id="body" x1="0" y1="0" x2="0.8" y2="1">
-      <stop offset="0%" stop-color="#080c16"/>
-      <stop offset="60%" stop-color="#0b111d"/>
-      <stop offset="100%" stop-color="#0d1524"/>
+    <linearGradient id="bodyGrad" x1="0" y1="0" x2="0.75" y2="1">
+      <stop offset="0%" stop-color="#05080d"/>
+      <stop offset="55%" stop-color="#03060a"/>
+      <stop offset="100%" stop-color="#060b12"/>
     </linearGradient>
-    <linearGradient id="statusBg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#111a2c"/>
-      <stop offset="100%" stop-color="#0e1626"/>
+    <linearGradient id="statusGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#101827"/>
+      <stop offset="100%" stop-color="#0b1220"/>
     </linearGradient>
-    <radialGradient id="termGlow" cx="0.12" cy="0.02" r="0.75">
-      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.10"/>
+    <linearGradient id="edgeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.65"/>
+      <stop offset="42%" stop-color="#2b3f57" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0.5"/>
+    </linearGradient>
+
+    <!-- Cahaya -->
+    <radialGradient id="glowTL" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.16"/>
+      <stop offset="55%" stop-color="#0ea5e9" stop-opacity="0.05"/>
       <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.55"/>
-      <stop offset="45%" stop-color="#334155" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#818cf8" stop-opacity="0.4"/>
-    </linearGradient>
-    <linearGradient id="prog" x1="0" y1="0" x2="1" y2="0">
+    <radialGradient id="glowBR" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#4f46e5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="barFill" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#22d3ee"/>
-      <stop offset="100%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
     </linearGradient>
-    <filter id="winShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="16" stdDeviation="26" flood-color="#000000" flood-opacity="0.7"/>
+    <linearGradient id="titleNeon" x1="0" y1="0" x2="1" y2="0.3">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#cffafe"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="clawGrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#67e8f9"/>
+    </linearGradient>
+
+    <!-- Pola -->
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1.2" y="0" fill="#ffffff" fill-opacity="0.014"/>
+    </pattern>
+    <pattern id="microGrid" width="34" height="34" patternUnits="userSpaceOnUse">
+      <path d="M34 0H0V34" fill="none" stroke="#7dd3fc" stroke-opacity="0.035" stroke-width="1"/>
+    </pattern>
+
+    <!-- Filter -->
+    <filter id="winShadow" x="-15%" y="-15%" width="130%" height="135%">
+      <feDropShadow dx="0" dy="18" stdDeviation="30" flood-color="#000000" flood-opacity="0.85"/>
     </filter>
-    <filter id="dotGlow" x="-150%" y="-150%" width="400%" height="400%">
-      <feGaussianBlur stdDeviation="2.6" result="g"/>
+    <filter id="neon" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3.4" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="neonSoft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="dotGlow" x="-180%" y="-180%" width="460%" height="460%">
+      <feGaussianBlur stdDeviation="2.4" result="g"/>
       <feMerge>
         <feMergeNode in="g"/>
         <feMergeNode in="SourceGraphic"/>
@@ -41,99 +84,162 @@
     </filter>
   </defs>
 
-  <rect x="7" y="10" width="1186" height="582" rx="16" fill="#000" opacity="0.4" filter="url(#winShadow)"/>
+  <!-- Bayangan jendela -->
+  <rect x="28" y="30" width="1144" height="552" rx="14" fill="#000000" opacity="0.55" filter="url(#winShadow)"/>
 
-  <g clip-path="url(#win)">
-    <rect width="1200" height="600" fill="url(#body)"/>
-    <rect width="1200" height="600" fill="url(#termGlow)"/>
+  <g clip-path="url(#winClip)">
+    <!-- Badan -->
+    <rect x="28" y="24" width="1144" height="552" fill="url(#bodyGrad)"/>
+    <rect x="28" y="24" width="1144" height="552" fill="url(#microGrid)"/>
+    <ellipse cx="240" cy="120" rx="420" ry="300" fill="url(#glowTL)"/>
+    <ellipse cx="1060" cy="520" rx="380" ry="280" fill="url(#glowBR)"/>
 
-    <rect width="1200" height="52" fill="url(#chrome)"/>
-    <rect y="51" width="1200" height="1" fill="#26344c"/>
-    <circle cx="28" cy="26" r="7" fill="#ff5f57"/>
-    <circle cx="52" cy="26" r="7" fill="#febc2e"/>
-    <circle cx="76" cy="26" r="7" fill="#28c840"/>
+    <!-- Title bar -->
+    <rect x="28" y="24" width="1144" height="48" fill="url(#chromeGrad)"/>
+    <rect x="28" y="71" width="1144" height="1" fill="#26334a"/>
+    <circle cx="56" cy="48" r="6.5" fill="#ff5f57"/>
+    <circle cx="78" cy="48" r="6.5" fill="#febc2e"/>
+    <circle cx="100" cy="48" r="6.5" fill="#28c840"/>
 
+    <!-- Tab aktif -->
     <g>
-      <rect x="108" y="12" width="168" height="28" rx="8" fill="#0b1424" stroke="#24344f"/>
-      <circle cx="126" cy="26" r="4" fill="#22d3ee" filter="url(#dotGlow)"/>
-      <text x="138" y="31" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12.5" fill="#8fa3bf">codeclaw — bash</text>
-      <text x="292" y="31" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12.5" fill="#3d4d68">zsh</text>
+      <rect x="128" y="34" width="196" height="28" rx="7" fill="#080d15" stroke="#233149"/>
+      <circle cx="146" cy="48" r="4" fill="#22d3ee" filter="url(#dotGlow)"/>
+      <text x="158" y="53" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12.5" fill="#93a9c6">codeclaw — zsh</text>
+      <text x="342" y="53" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12.5" fill="#3a4a63">node</text>
+      <text x="386" y="53" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12.5" fill="#3a4a63">tests</text>
     </g>
-    <text x="1172" y="31" text-anchor="end" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#3d4d68">~/codeclaw</text>
+    <text x="1144" y="53" text-anchor="end" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#3d4d68">~/codeclaw</text>
 
-    <g font-family="'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace" font-size="17">
-      <g>
-        <text x="44" y="102" fill="#4ade80">❯</text>
-        <text x="68" y="102" fill="#cbd5e1">git clone</text>
-        <text x="168" y="102" fill="#7dd3fc">https://github.com/pmuhammadagus-byte/codeclaw.git</text>
+    <!-- ===== Kolom kiri ===== -->
+    <g font-family="'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace">
+      <!-- Header -->
+      <g stroke="url(#clawGrad)" stroke-width="3.4" stroke-linecap="round" fill="none" filter="url(#neon)">
+        <path d="M62 132 L74 148"/>
+        <path d="M74 128 L86 144"/>
+        <path d="M86 124 L98 140"/>
       </g>
-      <text x="68" y="130" fill="#44546e">Cloning into 'codeclaw'... done.</text>
+      <text x="112" y="148" font-size="30" font-weight="700" letter-spacing="1.8" fill="url(#titleNeon)" filter="url(#neonSoft)">CodeClaw</text>
+      <text x="112" y="170" font-size="12.5" letter-spacing="1.4" fill="#4a6a86">AGENTIC SHELL · 27 TOOLS · MIT</text>
+      <rect x="62" y="186" width="690" height="1" fill="#15202e"/>
 
-      <g>
-        <text x="44" y="186" fill="#4ade80">❯</text>
-        <text x="68" y="186" fill="#cbd5e1">cd codeclaw &amp;&amp;</text>
-        <text x="240" y="186" fill="#c4b5fd">node cli.js start</text>
-      </g>
+      <!-- Baris log -->
+      <g font-size="15.5">
+        <text x="62" y="216" fill="#4ade80">❯</text>
+        <text x="88" y="216" fill="#dbe6f3">./codeclaw init</text>
+        <text x="232" y="216" fill="#67e8f9">--env termux</text>
+        <text x="742" y="216" text-anchor="end" font-size="12.5" fill="#33506b">0.4s</text>
 
-      <rect x="44" y="208" width="1112" height="1" fill="#1b2740"/>
+        <text x="88" y="242" fill="#4c6079">✓ sandbox aktif · model glm · warm 128ms</text>
 
-      <g>
-        <text x="44" y="252" font-size="20" font-weight="700" fill="#22d3ee">CodeClaw Pro</text>
-        <rect x="220" y="238" width="1" height="18" fill="#2b3a55"/>
-        <text x="238" y="252" font-size="15" fill="#7c8cab">model</text>
-        <text x="292" y="252" font-size="15" fill="#a5b4fc">custom/glm-5.3</text>
-        <text x="1130" y="252" font-size="13" text-anchor="end" fill="#3d4d68">27 tools loaded</text>
-      </g>
+        <text x="62" y="268" fill="#4ade80">❯</text>
+        <text x="88" y="268" fill="#dbe6f3">scan</text>
+        <text x="136" y="268" fill="#67e8f9">--deep .</text>
+        <text x="742" y="268" text-anchor="end" font-size="12.5" fill="#33506b">1.1s</text>
 
-      <g>
-        <text x="44" y="316" font-size="18" fill="#22d3ee">›</text>
-        <text x="72" y="316" fill="#f1f5f9">tambah endpoint login di server.js</text>
-      </g>
+        <text x="88" y="294" fill="#4ade80">✓</text>
+        <text x="106" y="294" fill="#8fa9c4">128 berkas · 0 temuan rawan</text>
 
-      <g font-size="16">
-        <circle cx="50" cy="354" r="4" fill="#22d3ee" filter="url(#dotGlow)"/>
-        <text x="70" y="360" fill="#67e8f9">read_file</text>
-        <text x="180" y="360" fill="#5b6c88">server.js</text>
-        <text x="1130" y="360" text-anchor="end" fill="#3d4d68">12ms</text>
+        <text x="62" y="320" fill="#4ade80">❯</text>
+        <text x="88" y="320" fill="#dbe6f3">patch auth.js</text>
+        <text x="224" y="320" fill="#67e8f9">--add rate-limit</text>
+        <text x="742" y="320" text-anchor="end" font-size="12.5" fill="#33506b">88ms</text>
 
-        <circle cx="50" cy="392" r="4" fill="#22d3ee" filter="url(#dotGlow)"/>
-        <text x="70" y="398" fill="#67e8f9">edit_file</text>
-        <text x="180" y="398" fill="#5b6c88">server.js</text>
-        <text x="298" y="398" fill="#4ade80">+18</text>
-        <text x="336" y="398" fill="#f87171">−3</text>
-        <text x="1130" y="398" text-anchor="end" fill="#3d4d68">88ms</text>
+        <text x="88" y="346" font-size="13.5" fill="#3f5470">@@ auth.js · 12,4 → 16,9 @@</text>
+        <text x="88" y="368" font-size="13.5" fill="#4ade80">+ app.use(limit(req.ip, 60))</text>
+        <text x="88" y="390" font-size="13.5" fill="#f87171">− // TODO: pindahkan ke middleware</text>
 
-        <circle cx="50" cy="430" r="4" fill="#22d3ee" filter="url(#dotGlow)"/>
-        <text x="70" y="436" fill="#67e8f9">shell</text>
-        <text x="180" y="436" fill="#5b6c88">npm test</text>
-        <text x="298" y="436" fill="#4ade80">✓ 12 passed</text>
-        <text x="1130" y="436" text-anchor="end" fill="#3d4d68">1.2s</text>
-      </g>
+        <text x="88" y="418" fill="#4ade80">✓ patch diterapkan · 1 berkas</text>
 
-      <rect x="44" y="466" width="1112" height="1" fill="#1b2740"/>
+        <text x="62" y="444" fill="#4ade80">❯</text>
+        <text x="88" y="444" fill="#dbe6f3">npm test</text>
+        <text x="742" y="444" text-anchor="end" font-size="12.5" fill="#33506b">1.2s</text>
 
-      <g>
-        <text x="44" y="508" font-size="17" fill="#4ade80">✓</text>
-        <text x="68" y="508" font-size="17" fill="#d7e3f4">Selesai — 1 file diubah, semua test lulus.</text>
-      </g>
+        <text x="88" y="470" fill="#4ade80">✓ 32 lulus</text>
+        <text x="182" y="470" fill="#f87171">0 gagal</text>
+        <text x="240" y="470" fill="#4c6079">· 2 dilewati</text>
 
-      <g>
-        <text x="44" y="556" fill="#4ade80">❯</text>
-        <rect x="70" y="541" width="11" height="20" fill="#22d3ee" opacity="0.9">
-          <animate attributeName="opacity" values="0.9;0.15;0.9" dur="1.2s" repeatCount="indefinite"/>
+        <text x="88" y="496" fill="#67e8f9">✓ build sukses · bundle 41.2 kB</text>
+
+        <rect x="62" y="514" width="690" height="1" fill="#15202e"/>
+
+        <text x="62" y="542" fill="#4ade80">❯</text>
+        <rect x="88" y="527" width="10" height="19" fill="#22d3ee" opacity="0.92">
+          <animate attributeName="opacity" values="0.92;0.1;0.92" dur="1.15s" repeatCount="indefinite"/>
         </rect>
       </g>
     </g>
 
-    <rect y="572" width="1200" height="28" fill="url(#statusBg)"/>
-    <rect y="572" width="1200" height="1" fill="#1e2b42"/>
-    <text x="44" y="591" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#3d4d68">NORMAL</text>
-    <text x="112" y="591" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#22d3ee">main</text>
-    <text x="152" y="591" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#3d4d68">utf-8 · node 22.5</text>
-    <rect x="1084" y="580" width="72" height="6" rx="3" fill="#1b2740"/>
-    <rect x="1084" y="580" width="48" height="6" rx="3" fill="url(#prog)"/>
-    <text x="1172" y="591" text-anchor="end" font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="12" fill="#3d4d68">42%</text>
+    <!-- Divider kolom -->
+    <rect x="774" y="108" width="1" height="414" fill="#131e2c"/>
+
+    <!-- ===== Kolom kanan: panel status ===== -->
+    <g font-family="'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace">
+      <text x="800" y="126" font-size="11.5" letter-spacing="2.4" fill="#3f5a75">SISTEM</text>
+
+      <g font-size="12.5">
+        <text x="800" y="176" letter-spacing="1.2" fill="#506b88">CPU</text>
+        <rect x="872" y="168" width="200" height="6" rx="3" fill="#0e1826"/>
+        <rect x="872" y="168" width="84" height="6" rx="3" fill="url(#barFill)"/>
+        <text x="1144" y="176" text-anchor="end" fill="#7dd3fc">42%</text>
+
+        <text x="800" y="210" letter-spacing="1.2" fill="#506b88">MEM</text>
+        <rect x="872" y="202" width="200" height="6" rx="3" fill="#0e1826"/>
+        <rect x="872" y="202" width="136" height="6" rx="3" fill="url(#barFill)"/>
+        <text x="1144" y="210" text-anchor="end" fill="#7dd3fc">68%</text>
+
+        <text x="800" y="244" letter-spacing="1.2" fill="#506b88">CTX</text>
+        <rect x="872" y="236" width="200" height="6" rx="3" fill="#0e1826"/>
+        <rect x="872" y="236" width="64" height="6" rx="3" fill="url(#barFill)"/>
+        <text x="1144" y="244" text-anchor="end" fill="#7dd3fc">41k</text>
+
+        <text x="800" y="278" letter-spacing="1.2" fill="#506b88">TOOLS</text>
+        <rect x="872" y="270" width="200" height="6" rx="3" fill="#0e1826"/>
+        <rect x="872" y="270" width="200" height="6" rx="3" fill="#34d399" fill-opacity="0.65"/>
+        <text x="1144" y="278" text-anchor="end" fill="#6ee7b7">27/27</text>
+      </g>
+
+      <rect x="800" y="304" width="344" height="1" fill="#131e2c"/>
+
+      <text x="800" y="330" font-size="11.5" letter-spacing="2.4" fill="#3f5a75">ENV</text>
+      <g font-size="12.5">
+        <text x="800" y="358" fill="#4c6079">OS</text>
+        <text x="1144" y="358" text-anchor="end" fill="#a9c2da">linux aarch64</text>
+        <text x="800" y="386" fill="#4c6079">SHELL</text>
+        <text x="1144" y="386" text-anchor="end" fill="#a9c2da">zsh 5.9</text>
+        <text x="800" y="414" fill="#4c6079">RUNTIME</text>
+        <text x="1144" y="414" text-anchor="end" fill="#a9c2da">node v22.5.0</text>
+      </g>
+
+      <rect x="800" y="440" width="344" height="1" fill="#131e2c"/>
+
+      <text x="800" y="466" font-size="11.5" letter-spacing="2.4" fill="#3f5a75">GIT</text>
+      <g font-size="12.5">
+        <circle cx="806" cy="491" r="4" fill="#34d399" filter="url(#dotGlow)"/>
+        <text x="822" y="495" fill="#cbd5e1">main</text>
+        <text x="1144" y="495" text-anchor="end" fill="#4c6079">bersih</text>
+        <text x="800" y="521" fill="#4c6079">commit</text>
+        <text x="1144" y="521" text-anchor="end" fill="#8fa9c4">e139cea</text>
+      </g>
+    </g>
+
+    <!-- Scanline CRT -->
+    <rect x="28" y="24" width="1144" height="552" fill="url(#scan)"/>
+
+    <!-- Status bar -->
+    <rect x="28" y="548" width="1144" height="28" fill="url(#statusGrad)"/>
+    <rect x="28" y="547" width="1144" height="1" fill="#1d2a3e"/>
+    <g font-family="'SF Mono',ui-monospace,Consolas,monospace" font-size="11.5">
+      <rect x="44" y="556" width="62" height="14" rx="3" fill="#0f2a38"/>
+      <text x="52" y="567" fill="#22d3ee" letter-spacing="1">NORMAL</text>
+      <text x="120" y="567" fill="#4ade80">main</text>
+      <text x="164" y="567" fill="#2f4156">│</text>
+      <text x="176" y="567" fill="#3d5470">utf-8 · node 22.5 · 42ms</text>
+      <text x="1078" y="567" fill="#3d5470">ln 528, col 12</text>
+      <text x="1156" y="567" text-anchor="end" fill="#22d3ee">●</text>
+    </g>
   </g>
 
-  <rect x="1" y="1" width="1198" height="598" rx="16" fill="none" stroke="url(#edge)" stroke-width="1.6"/>
+  <!-- Border jendela -->
+  <rect x="28.8" y="24.8" width="1142.4" height="550.4" rx="13.5" fill="none" stroke="url(#edgeGrad)" stroke-width="1.6"/>
 </svg>
