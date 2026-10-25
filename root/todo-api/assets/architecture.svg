@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="470" viewBox="0 0 1100 470" role="img" aria-label="Diagram arsitektur: Client ke Express Router ke Store ke todos.json">
+  <defs>
+    <linearGradient id="abg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="100%" stop-color="#0a0f1e"/>
+    </linearGradient>
+
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.04"/>
+    </linearGradient>
+
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0.04"/>
+    </linearGradient>
+
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.04"/>
+    </linearGradient>
+
+    <linearGradient id="fwd" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.95"/>
+    </linearGradient>
+
+    <marker id="arrow" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 1l9 5-9 5z" fill="#22d3ee"/>
+    </marker>
+
+    <marker id="arrowV" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 1l9 5-9 5z" fill="#a855f7"/>
+    </marker>
+
+    <pattern id="grid2" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" fill="none" stroke="#7dd3fc" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+
+    <filter id="boxShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <rect width="1100" height="470" fill="url(#abg)"/>
+  <rect width="1100" height="470" fill="url(#grid2)"/>
+
+  <text x="40" y="48" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="800" fill="#e2e8f0">Arsitektur Request</text>
+  <text x="40" y="72" font-family="Consolas, Monaco, monospace" font-size="13" fill="#64748b">Client → Express Router → Store → todos.json  ·  setiap mutasi = 1 write atomik</text>
+
+  <!-- ===== Row 1: request flow ===== -->
+  <!-- Client -->
+  <g filter="boxShadow" transform="translate(40 120)">
+    <rect width="188" height="116" rx="14" fill="#0f172a" stroke="#334155"/>
+    <rect width="188" height="116" rx="14" fill="url(#cyan)"/>
+    <text x="18" y="30" font-family="Consolas, Monaco, monospace" font-size="11" fill="#64748b" letter-spacing="1.8">CLIENT</text>
+    <text x="18" y="60" font-family="Consolas, Monaco, monospace" font-size="14" fill="#7dd3fc">curl / fetch</text>
+    <text x="18" y="84" font-family="Consolas, Monaco, monospace" font-size="12" fill="#64748b">JSON request</text>
+    <text x="18" y="102" font-family="Consolas, Monaco, monospace" font-size="12" fill="#64748b">:3000</text>
+  </g>
+
+  <line x1="236" y1="178" x2="300" y2="178" stroke="url(#fwd)" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- Express -->
+  <g filter="boxShadow" transform="translate(308 108)">
+    <rect width="286" height="140" rx="14" fill="#0f172a" stroke="#22d3ee" stroke-opacity="0.5"/>
+    <rect width="286" height="140" rx="14" fill="url(#cyan)"/>
+    <text x="18" y="28" font-family="Consolas, Monaco, monospace" font-size="11" fill="#64748b" letter-spacing="1.8">INDEX.JS</text>
+    <text x="18" y="52" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" font-weight="700" fill="#e2e8f0">Express Router</text>
+    <g font-family="Consolas, Monaco, monospace" font-size="11" fill="#94a3b8">
+      <text x="18" y="76">express.json()  ·  parseId()</text>
+      <text x="18" y="94">validateTitle()  ·  routes</text>
+      <text x="18" y="112" fill="#5eead4">200 · 201 · 400 · 404</text>
+      <text x="18" y="130" fill="#64748b">error handler → JSON</text>
+    </g>
+  </g>
+
+  <line x1="602" y1="178" x2="666" y2="178" stroke="url(#fwd)" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- Store -->
+  <g filter="boxShadow" transform="translate(674 108)">
+    <rect width="196" height="140" rx="14" fill="#0f172a" stroke="#a855f7" stroke-opacity="0.5"/>
+    <rect width="196" height="140" rx="14" fill="url(#violet)"/>
+    <text x="18" y="28" font-family="Consolas, Monaco, monospace" font-size="11" fill="#64748b" letter-spacing="1.8">STORE.JS</text>
+    <text x="18" y="52" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="15" font-weight="700" fill="#e2e8f0">createStore()</text>
+    <g font-family="Consolas, Monaco, monospace" font-size="11" fill="#94a3b8">
+      <text x="18" y="76">all · find · create</text>
+      <text x="18" y="94">update · remove</text>
+      <text x="18" y="112" fill="#d8b4fe">heap cache</text>
+      <text x="18" y="130" fill="#64748b">reload()</text>
+    </g>
+  </g>
+
+  <line x1="878" y1="178" x2="942" y2="178" stroke="url(#fwd)" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- JSON file -->
+  <g filter="boxShadow" transform="translate(950 108)">
+    <rect width="110" height="140" rx="14" fill="#0f172a" stroke="#f59e0b" stroke-opacity="0.55"/>
+    <rect width="110" height="140" rx="14" fill="url(#amber)"/>
+    <text x="18" y="28" font-family="Consolas, Monaco, monospace" font-size="11" fill="#64748b" letter-spacing="1.8">DISK</text>
+    <text x="18" y="56" font-family="Consolas, Monaco, monospace" font-size="12" fill="#fcd34d">todos</text>
+    <text x="18" y="74" font-family="Consolas, Monaco, monospace" font-size="12" fill="#fcd34d">.json</text>
+    <text x="18" y="102" font-family="Consolas, Monaco, monospace" font-size="10" fill="#94a3b8">nextId</text>
+    <text x="18" y="118" font-family="Consolas, Monaco, monospace" font-size="10" fill="#94a3b8">todos[]</text>
+  </g>
+
+  <!-- ===== Row 2: write pipeline ===== -->
+  <g transform="translate(40 306)">
+    <text x="0" y="-14" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="13" font-weight="700" fill="#94a3b8" letter-spacing="0.5">Setiap mutasi (POST / PUT / DELETE)</text>
+
+    <g font-family="Consolas, Monaco, monospace" font-size="12">
+      <g transform="translate(0 0)">
+        <rect width="150" height="52" rx="10" fill="#0f172a" stroke="#334155"/>
+        <text x="14" y="22" fill="#e2e8f0">mutasi heap</text>
+        <text x="14" y="40" fill="#64748b" font-size="10">todos.push()</text>
+      </g>
+      <text x="158" y="31" fill="#475569">→</text>
+      <g transform="translate(180 0)">
+        <rect width="150" height="52" rx="10" fill="#0f172a" stroke="#334155"/>
+        <text x="14" y="22" fill="#e2e8f0">tulis .tmp</text>
+        <text x="14" y="40" fill="#64748b" font-size="10">writeFileSync</text>
+      </g>
+      <text x="338" y="31" fill="#475569">→</text>
+      <g transform="translate(360 0)">
+        <rect width="150" height="52" rx="10" fill="#0f172a" stroke="#334155"/>
+        <text x="14" y="22" fill="#e2e8f0">fsync</text>
+        <text x="14" y="40" fill="#64748b" font-size="10">flush ke disk</text>
+      </g>
+      <text x="518" y="31" fill="#475569">→</text>
+      <g transform="translate(540 0)">
+        <rect width="170" height="52" rx="10" fill="#052e2b" stroke="#14b8a6" stroke-opacity="0.6"/>
+        <text x="14" y="22" fill="#5eead4">rename atomik</text>
+        <text x="14" y="40" fill="#64748b" font-size="10">ganti file utuh</text>
+      </g>
+      <text x="718" y="31" fill="#475569">→</text>
+      <g transform="translate(740 0)">
+        <rect width="230" height="52" rx="10" fill="#0f172a" stroke="#f59e0b" stroke-opacity="0.5"/>
+        <text x="14" y="22" fill="#fcd34d">todos.json valid</text>
+        <text x="14" y="40" fill="#64748b" font-size="10">tidak pernah setengah jadi</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- recovery note -->
+  <g transform="translate(40 396)">
+    <rect width="1010" height="46" rx="10" fill="#1a1033" fill-opacity="0.6" stroke="#a855f7" stroke-opacity="0.35"/>
+    <circle cx="26" cy="23" r="7" fill="#a855f7" fill-opacity="0.25" stroke="#a855f7"/>
+    <text x="26" y="27" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#d8b4fe" text-anchor="middle" font-weight="700">!</text>
+    <text x="46" y="27" font-family="Consolas, Monaco, monospace" font-size="11" fill="#c4b5fd">File korup saat load? → dicadangkan jadi todos.json.corrupt-&lt;timestamp&gt;, server tetap boot dengan data kosong</text>
+  </g>
+</svg>
