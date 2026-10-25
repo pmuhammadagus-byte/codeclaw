@@ -11,7 +11,7 @@ import { loadConfig, migrateIfNeeded } from "./lib/config.js";
 import { SkillStore, buildSkillSection } from "./lib/skills.js";
 import { Knowledge } from "./lib/knowledge.js";
 import { getBrainPrompt } from "./lib/brain.js";
-import { distillSkill, isComplexTask } from "./lib/skill-distiller.js";
+import { distillSkill, isComplexTask, autoImproveFailingSkills } from "./lib/skill-distiller.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, "config.json");
@@ -154,6 +154,16 @@ async function selfImprove(task, failed) {
         });
         console.log(`${C.green}🧬 New skill: "${result.name}" [${saved.id}]${C.reset}`);
       }
+    }
+
+    // Learning loop: auto-improve failing skills
+    try {
+      const improved = await autoImproveFailingSkills({ llmConfig: CONFIG.llm, skillStore });
+      if (improved.length) {
+        console.log(`${C.green}🔧 Auto-improved ${improved.length} failing skill(s)${C.reset}`);
+      }
+    } catch (e) {
+      console.log(`${C.dim}⚠ auto-improve error: ${e.message}${C.reset}`);
     }
   } catch (e) {
     console.log(`${C.dim}⚠ self-improve error: ${e.message}${C.reset}`);
