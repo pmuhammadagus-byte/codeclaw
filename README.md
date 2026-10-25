@@ -389,3 +389,36 @@ Jangan jalankan sebagai root kalau tidak perlu, atau pakai `install_package` den
 ---
 
 MIT License.
+
+
+## 🧠 Agentic Coding & Self-Evolution (Fitur Terbaru)
+
+CodeClaw bukan sekadar chatbot yang menjawab pertanyaan. Ia adalah **Autonomous Software Engineer** yang bisa mengelola siklus hidup pengembangan perangkat lunak (SDLC) secara mandiri.
+
+### Kemampuan Otonom:
+- **Agentic Coding**: Memecah tugas kompleks (seperti membuat aplikasi full-stack) menjadi langkah-langkah terstruktur (`think` → `todo_write` → eksekusi → verifikasi).
+- **Self-Correction**: Jika menemukan error (misal: `CORS failed`, `is not a function`), ia akan membaca log, menganalisis penyebabnya, memperbaiki kodenya sendiri, dan mengujinya ulang.
+- **Learning Loop (Self-Evolving)**: Setiap tugas yang berhasil diselesaikan akan otomatis diekstrak menjadi *skill* baru di folder `skills/`. Statistik (sukses/gagal) juga diperbarui secara otomatis.
+- **Full-Stack Proof**: Telah teruji membangun REST API (Node.js + Express) dan Frontend (HTML + CSS + Vanilla JS) yang saling terhubung dengan CORS dan Dynamic Hostname.
+
+---
+
+## 🚀 Bukti Nyata (Real-World Proof)
+
+CodeClaw telah berhasil membangun aplikasi **Book Management (Full-Stack)** secara mandiri di dalam VPS:
+1. **Backend (Book API)**: Node.js + Express, berjalan di port 3001 dengan 5 endpoint CRUD (Create, Read, Update, Delete).
+2. **Frontend (Book UI)**: HTML/CSS/JS murni, berjalan di port 8080, terhubung ke API menggunakan Fetch API.
+3. **Bug Fixing**: CodeClaw secara mandiri mendeteksi dan memperbaiki error `Failed to Fetch` (CORS) dan `forEach is not a function`.
+
+---
+
+## 🌐 Kustomisasi Bahasa & Kepribadian
+Secara default, CodeClaw diatur untuk menjawab dengan **Bahasa Indonesia** (lihat `IDENTITY.md`). 
+Jika Anda melakukan *fork* dan ingin mengubah kepribadian atau bahasanya, cukup edit:
+- `IDENTITY.md`: Nama, peran, dan bahasa wajib.
+- `SOUL.md`: Karakter, etika, dan gaya bicara.
+- `system.md`: Aturan teknis dan tool calling.
+
+
+## 📄 Lisensi
+MIT
