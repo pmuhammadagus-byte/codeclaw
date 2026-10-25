@@ -4,13 +4,13 @@
 
 <br>
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/test.yml)
+[![CI](https://github.com/pmuhammadagus-byte/codeclaw/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/pmuhammadagus-byte/codeclaw/actions/workflows/test.yml)
 
-![Node.js](https://img.shields.io/badge/Node.js-20%20%7C%2022-339933?style=flat-square&logo=node.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-22%20%7C%2024-339933?style=flat-square&logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-18%20passing-22d3ee?style=flat-square)
 ![Dependencies](https://img.shields.io/badge/deps-0%20runtime%20extra-a855f7?style=flat-square)
-![License](https://img.shields.io/badge/license-ISC-64748b?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-64748b?style=flat-square)
 
 **REST API Todo List** — Node.js + Express, data dipersist ke file JSON, **tanpa database eksternal**.
 
@@ -54,15 +54,8 @@ npm test                                   # 18 test (API + persistence)
 
 ## CI
 
-Workflow [`.github/workflows/test.yml`](.github/workflows/test.yml) menjalankan `npm test`
-otomatis pada setiap **push** dan **pull request** ke `main`, di dua versi Node (20 & 22).
-
-Ganti placeholder badge di atas dengan repo Anda:
-
-```diff
--https://github.com/OWNER/REPO/actions/workflows/test.yml/badge.svg?branch=main
-+https://github.com/<username>/<repo>/actions/workflows/test.yml/badge.svg?branch=main
-```
+Workflow [`.github/workflows/test.yml`](../.github/workflows/test.yml) menjalankan `npm test`
+otomatis pada setiap **push** dan **pull request** ke `main`, di dua versi Node (22 & 24).
 
 ## Endpoint
 
@@ -173,6 +166,7 @@ todo-api/
 ├── store.js               # persistence: atomic write, load, recovery
 ├── index.test.js          # 18 test (node:test)
 ├── package.json
+├── LICENSE                # MIT
 └── todos.json             # data (gitignored)
 ```
 
