@@ -4,6 +4,15 @@
   <img src="assets/banner.svg" alt="CodeClaw Pro — coding agent untuk terminal" width="100%">
 </p>
 
+<p align="center">
+  <a href="https://github.com/pmuhammadagus-byte/codeclaw/actions/workflows/test.yml">
+    <img src="https://github.com/pmuhammadagus-byte/codeclaw/actions/workflows/test.yml/badge.svg" alt="CI">
+  </a>
+  <img src="https://img.shields.io/badge/node-%3E%3D22.5-brightgreen" alt="Node">
+  <img src="https://img.shields.io/badge/tests-18%20passing-success" alt="Tests">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+</p>
+
 Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, macOS, dan WSL. Tanpa dependency NPM — cukup Node.js 22.5+.
 
 - **29 tools** — file ops, shell, git/gh, web, code indexer, todo, memory, research, skills, brain mode
