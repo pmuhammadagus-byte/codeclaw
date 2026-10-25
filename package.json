@@ -6,12 +6,13 @@
   "scripts": {
     "start": "node index.js",
     "tg": "node telegram.js",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test \"test/**/*.test.js\"",
+    "badges": "node scripts/gen-badges.mjs"
   },
   "engines": {
     "node": ">=22.5.0"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "undici": "^8.12.3"
   }
 }

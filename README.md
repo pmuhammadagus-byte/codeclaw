@@ -5,17 +5,17 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/pmuhammadagus-byte/codeclaw/actions/workflows/test.yml">
-    <img src="https://github.com/pmuhammadagus-byte/codeclaw/actions/workflows/test.yml/badge.svg" alt="CI">
-  </a>
-  <img src="https://img.shields.io/badge/node-%3E%3D22.5-brightgreen" alt="Node">
-  <img src="https://img.shields.io/badge/tests-18%20passing-success" alt="Tests">
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+  <img src="assets/badges/node.svg" alt="Node.js 22.5+">
+  <img src="assets/badges/tools.svg" alt="30 tools">
+  <img src="assets/badges/tests.svg" alt="32 test lulus">
+  <img src="assets/badges/license.svg" alt="Lisensi MIT">
+  <img src="assets/badges/deps.svg" alt="0 dependency wajib">
+  <img src="assets/badges/version.svg" alt="Versi 1.0.0">
 </p>
 
-Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, macOS, dan WSL. Tanpa dependency NPM — cukup Node.js 22.5+.
+Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, macOS, dan WSL. Tanpa `npm install` — cukup Node.js 22.5+.
 
-- **29 tools** — file ops, shell, git/gh, web, code indexer, todo, memory, research, skills, brain mode
+- **30 tools** — file ops, shell, git/gh, web, code indexer, todo, memory, research, skills, brain mode
 - **Self-evolving** — agent menyimpan pengalaman sukses jadi skill reusable
 - **Knowledge base** — riset ArXiv + Hacker News masuk SQLite, otomatis di-inject ke prompt
 - **Multi-channel** — REPL terminal dan bot Telegram
@@ -36,7 +36,7 @@ Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, mac
 5. [Setup Telegram](#setup-telegram)
 6. [Perintah CLI](#perintah-cli)
 7. [Perintah REPL](#perintah-repl)
-8. [29 Tools](#29-tools)
+8. [30 Tools](#30-tools)
 9. [Brain Level](#brain-level)
 10. [Konfigurasi](#konfigurasi)
 11. [Self-Evolving Skills](#self-evolving-skills)
@@ -107,11 +107,15 @@ cd ~/codeclaw
 chmod +x cli.js
 ```
 
-Tidak ada `npm install` — zero dependency. Pastikan bisa jalan:
+Bisa langsung jalan **tanpa `npm install`** — semua fitur inti pakai modul bawaan Node. Pastikan bisa jalan:
 
 ```bash
 node cli.js
 ```
+
+Opsional: `npm install` hanya untuk memasang **`undici`** (lihat catatan di bawah).
+
+> **Soal `undici`.** Satu-satunya dependency di `package.json` adalah `undici`, dan sifatnya **opsional**. Gunanya memasang global dispatcher agar koneksi LLM dipaksa lewat IPv4 (berguna kalau jaringanmu bermasalah di IPv6, kasus umum di Termux). Tanpa `undici`, agent tetap jalan normal: `lib/ipv4-lookup.js` hanya mencatat satu baris log lalu memakai `dns.lookup` bawaan Node dengan `family: 4`. Jalankan `npm install` kalau kamu kena error koneksi/timeout ke provider LLM.
 
 ---
 
@@ -249,7 +253,7 @@ Perintah bot Telegram: `/start`, `/clear`, `/todo`, `/mem`, `/status`, `/whoami`
 
 ---
 
-## 29 Tools
+## 30 Tools
 
 **File & kode (7):**
 - `read_file` — baca dengan line numbers
@@ -298,7 +302,7 @@ Perintah bot Telegram: `/start`, `/clear`, `/todo`, `/mem`, `/status`, `/whoami`
 - `think` — reasoning eksplisit sebelum eksekusi
 - `verify` — buktikan hasil dengan command konkret
 
-**Total: 29 tools**
+**Total: 30 tools**
 
 ---
 
