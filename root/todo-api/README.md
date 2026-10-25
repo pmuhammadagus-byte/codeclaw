@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="Todo API — Express REST API dengan JSON persistence" width="100%">
+<img src="https://raw.githubusercontent.com/pmuhammadagus-byte/codeclaw/main/root/todo-api/assets/banner.svg" alt="Todo API — Express REST API dengan JSON persistence" width="100%">
 
 <br>
 
@@ -35,7 +35,7 @@ oleh 18 test otomatis — tanpa satu pun dependency tambahan selain Express.
 ## Arsitektur
 
 <div align="center">
-<img src="assets/architecture.svg" alt="Diagram alur: Client ke Express Router ke Store ke todos.json" width="100%">
+<img src="https://raw.githubusercontent.com/pmuhammadagus-byte/codeclaw/main/root/todo-api/assets/architecture.svg" alt="Diagram alur: Client ke Express Router ke Store ke todos.json" width="100%">
 </div>
 
 Satu arah, tanpa lapisan misterius: router memvalidasi, store menyimpan ke heap + disk,
