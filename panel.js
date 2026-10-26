@@ -8,13 +8,26 @@ import { loadConfig, saveConfig, listModels, setActiveModel, migrateIfNeeded } f
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, "config.json");
 
-const C = { reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m", cyan: "\x1b[36m", green: "\x1b[32m", yellow: "\x1b[33m", red: "\x1b[31m", magenta: "\x1b[35m" };
+const C = { reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m", cyan: "\x1b[36m", green: "\x1b[32m", yellow: "\x1b[33m", red: "\x1b[31m", magenta: "\x1b[35m", blue: "\x1b[34m" };
 let rl;
 const ask = (p) => new Promise(r => rl.question(p, r));
 const clear = () => process.stdout.write("\x1b[2J\x1b[H");
 
+const LOGO = `
+${C.cyan}${C.bold}
+    ██████╗ ██████╗ ███████╗██╗     ██████╗  █████╗  ██████╗██╗  ███████╗██╗   ██╗
+    ██╔══██╗██╔══██╗██╔════╝██║     ██╔══██╗██╔══██╗██╔════╝██║  ██╔════╝██║   ██║
+    ██████╔╝██████╔╝█████╗  ██║     ██████╔╝███████║██║     ██║  █████╗  ███████╔╝
+    ██╔══██╗██╔══██╗██╔══╝  ██║     ██╔══██╗██╔══██║██║     ██║  ██╔══╝  ╚══════╝
+    ██████╔╝██████╔╝███████╗███████╗██║  ██║██║  ██║╚██████╗██║  ███████╗     ██║
+    ╚═════╝ ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚══════╝     ╚═╝
+${C.reset}
+${C.dim}    Senior Software Engineer & AI Agent${C.reset}
+`;
+
 function box(title) {
   clear();
+  console.log(LOGO);
   const w = 62;
   console.log(C.cyan + C.bold + "╔" + "═".repeat(w) + "╗" + C.reset);
   console.log(C.cyan + C.bold + "║  " + title.padEnd(w - 2) + "║" + C.reset);
