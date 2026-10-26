@@ -27,6 +27,21 @@ Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, mac
 
 ---
 
+
+## 📈 Market Analysis & Automation (Fitur Baru)
+
+CodeClaw kini dilengkapi dengan mesin analisa kuantitatif dan fundamental otomatis:
+
+- **XAU/USD (Gold) Analysis**: Menarik data harga dari Twelve Data, menghitung RSI & SMA, membaca berita The Fed (Exa AI), dan mengambil data makro (US10Y, VIX via FRED API). Laporan dikirim otomatis ke Telegram setiap pagi.
+- **Automated Research**: Cron job berjalan otomatis untuk meriset jurnal ArXiv dan Hacker News, menyimpannya ke Knowledge Base.
+- **Production Supervisor**: Menggunakan `run.sh` sebagai supervisor (auto-restart jika crash, heartbeat monitor, anti double-process). Bot dijamin hidup 24/7.
+
+### Setup Cron & API Keys
+Untuk mengaktifkan fitur analisa Emas, pastikan Anda mengisi API Key berikut di `config.json`:
+- `twelvedata.apiKey`: Dapatkan gratis di twelvedata.com.
+- `channels.telegram.accounts.default.chatId`: ID Telegram Anda (bisa diatur via panel.js).
+
+
 ## Daftar Isi
 
 1. [Persyaratan](#persyaratan)

@@ -62,7 +62,8 @@
         "default": {
           "botToken": "",
           "allowedUserIds": [],
-          "pollTimeout": 30
+          "pollTimeout": 30,
+          "chatId": "123456789"
         }
       }
     }
@@ -86,5 +87,8 @@
       "arxiv",
       "hn"
     ]
+  },
+  "twelvedata": {
+    "apiKey": "YOUR_TWELVE_DATA_API_KEY"
   }
 }
