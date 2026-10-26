@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { extractFacts, newsSignal, sanitize, analyze } from "../scripts/gold-analysis.mjs";
+import { extractFacts, newsSignal, sanitize, analyze, atr } from "../scripts/gold-analysis.mjs";
 
 test("sanitize membuang markdown & bullet, menyisakan kalimat utuh", () => {
   const raw = "## Press Release\n### Fed\n- **Gold** rises [lihat](https://x.com) hari ini.";
@@ -106,4 +106,53 @@ test("analyze: sinyal berita menggeser skor, tapi tidak melampaui batas", () => 
   assert.ok(["BUY", "SELL", "WAIT"].includes(base.reco));
   assert.ok(hawk.score < base.score, "berita hawkish harus menurunkan skor");
   assert.equal(hawk.newsSignal.score, -1);
+});
+
+test("atr(14): mengembalikan null kalau data kurang, angka kalau cukup", () => {
+  const bars = Array.from({ length: 14 }, (_, i) => ({
+    date: `2026-01-${String(i + 1).padStart(2, "0")}`,
+    open: 2000 + i, high: 2010 + i, low: 1990 + i, close: 2000 + i,
+  }));
+  assert.equal(atr(bars, 14), null, "14 bar = kurang (butuh 15)");
+
+  const bars15 = bars.concat({ date: "2026-01-15", open: 2014, high: 2024, low: 2004, close: 2014 });
+  const a = atr(bars15, 14);
+  assert.ok(Number.isFinite(a) && a > 0, `harus > 0, dapat ${a}`);
+});
+
+test("analyze: BUY/SELL menyertakan level SL/TP, WAIT tidak", () => {
+  // Tren naik kuat → BUY
+  const buyBars = Array.from({ length: 60 }, (_, i) => ({
+    date: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`,
+    open: 2000 + i * 5, high: 2010 + i * 5, low: 1990 + i * 5, close: 2005 + i * 5,
+  }));
+  const buy = analyze(buyBars, []);
+  if (buy.reco === "BUY") {
+    assert.ok(buy.levels, "BUY harus punya levels");
+    assert.ok(buy.levels.sl < buy.levels.entry, "SL BUY harus di bawah entry");
+    assert.ok(buy.levels.tp1 > buy.levels.entry, "TP1 BUY harus di atas entry");
+    assert.ok(buy.levels.tp2 > buy.levels.tp1, "TP2 BUY harus di atas TP1");
+    assert.ok(Math.abs(buy.levels.entry - buy.levels.sl) > 0, "jarak SL > 0");
+  }
+
+  // Tren turun kuat → SELL
+  const sellBars = Array.from({ length: 60 }, (_, i) => ({
+    date: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`,
+    open: 2000 - i * 5, high: 2010 - i * 5, low: 1990 - i * 5, close: 2005 - i * 5,
+  }));
+  const sell = analyze(sellBars, []);
+  if (sell.reco === "SELL") {
+    assert.ok(sell.levels, "SELL harus punya levels");
+    assert.ok(sell.levels.sl > sell.levels.entry, "SL SELL harus di atas entry");
+    assert.ok(sell.levels.tp1 < sell.levels.entry, "TP1 SELL harus di bawah entry");
+    assert.ok(sell.levels.tp2 < sell.levels.tp1, "TP2 SELL harus di bawah TP1");
+  }
+
+  // WAIT → tidak ada levels
+  const flatBars = Array.from({ length: 60 }, (_, i) => ({
+    date: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`,
+    open: 2000, high: 2001, low: 1999, close: 2000,
+  }));
+  const wait = analyze(flatBars, []);
+  if (wait.reco === "WAIT") assert.equal(wait.levels, undefined, "WAIT tidak punya levels");
 });

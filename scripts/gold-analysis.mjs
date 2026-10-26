@@ -85,7 +85,22 @@ export function rsi(values, period = 14) {
   return 100 - 100 / (1 + rs);
 }
 
-// ─────────────────────────── SUMBER DATA ───────────────────────────
+/** ATR Wilder(14). Mengembalikan null kalau data belum cukup. */
+export function atr(bars, period = 14) {
+  if (!Array.isArray(bars) || bars.length < period + 1) return null;
+  const trs = [];
+  for (let i = 1; i < bars.length; i++) {
+    const h = bars[i].high, l = bars[i].low, pc = bars[i - 1].close;
+    trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+  }
+  // Seed: rata-rata TR pertama.
+  let val = trs.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  // Smoothing Wilder untuk sisa.
+  for (let i = period; i < trs.length; i++) {
+    val = (val * (period - 1) + trs[i]) / period;
+  }
+  return val;
+}
 
 async function loadConfig() {
   const raw = await readFile(join(ROOT, "config.json"), "utf8");
@@ -195,10 +210,11 @@ function lastAndChange(rows, lookback = 5) {
  * Tiap seri independen — satu gagal tidak menggagalkan yang lain maupun analisa emas.
  */
 async function fetchMacro(apiKey) {
-  const [us10y, vix, usd] = await Promise.allSettled([
+  const [us10y, vix, usd, realYield] = await Promise.allSettled([
     fetchFredSeries("DGS10"),
     fetchFredSeries("VIXCLS"),
     fetchUsd(apiKey),
+    fetchFredSeries("DFII10"),
   ]);
 
   const pick = (r, label) => {
@@ -206,7 +222,12 @@ async function fetchMacro(apiKey) {
     return { value: null, date: null, changePct: 0, error: `${label}: ${r.reason?.message ?? r.reason}` };
   };
 
-  return { us10y: pick(us10y, "US10Y"), usd: pick(usd, "EUR/USD"), vix: pick(vix, "VIX") };
+  return {
+    us10y: pick(us10y, "US10Y"),
+    usd: pick(usd, "EUR/USD"),
+    vix: pick(vix, "VIX"),
+    realYield: pick(realYield, "DFII10"),
+  };
 }
 
 async function fetchNews(exaKey) {
@@ -379,6 +400,13 @@ function analyze(bars, articles = [], macro = null) {
       else if (pp <= -0.10) { macroScore += 1; reasons.push(`US10Y ${pp.toFixed(2)}pp (bullish)`); }
     }
 
+    // Real yield (DFII10): naik → biaya opportunity emas naik → bearish; turun → bullish
+    if (macro.realYield?.value != null) {
+      const pp = macro.realYield.changeAbs;
+      if (pp >= 0.10) { macroScore -= 1; reasons.push(`Real yield (DFII10) +${pp.toFixed(2)}pp (bearish)`); }
+      else if (pp <= -0.10) { macroScore += 1; reasons.push(`Real yield (DFII10) ${pp.toFixed(2)}pp (bullish)`); }
+    }
+
     // EUR/USD naik = dolar melemah = bullish emas (arah dibalik dari DXY).
     if (usd?.value != null) {
       const p = usd.changePct;
@@ -397,7 +425,19 @@ function analyze(bars, articles = [], macro = null) {
 
   const reco = score >= 2 ? "BUY" : score <= -2 ? "SELL" : "WAIT";
 
-  return { last, rsiVal, sma20, sma50, changePct, hi50, lo50, score, reasons, reco, newsSignal: news, macro, macroScore };
+  const atrVal = atr(bars, 14);
+  const slDist = Number.isFinite(atrVal) ? atrVal * 1.5 : null;
+  const levels = reco !== "WAIT" && slDist != null
+    ? {
+        entry: last.close,
+        sl: reco === "BUY" ? last.close - slDist : last.close + slDist,
+        tp1: reco === "BUY" ? last.close + slDist : last.close - slDist,
+        tp2: reco === "BUY" ? last.close + slDist * 2 : last.close - slDist * 2,
+        atr: atrVal,
+      }
+    : null;
+
+  return { last, rsiVal, sma20, sma50, changePct, hi50, lo50, score, reasons, reco, levels, newsSignal: news, macro, macroScore };
 }
 
 function buildAnalysis(a, news, articles = []) {
@@ -473,6 +513,7 @@ function render(a, news, paragraphs, bars) {
     L.push("");
     L.push("  ── MAKRO ──────────────────────────────────────");
     L.push(`  US10Y : ${fmt(m.us10y, 2, "%")}${m.us10y?.value != null ? ` | ${sign(m.us10y.changeAbs)} pp` : ""}`);
+    L.push(`  RealY : ${fmt(m.realYield, 2, "%")}${m.realYield?.value != null ? ` | ${sign(m.realYield.changeAbs)} pp` : ""}`);
     L.push(`  USD   : EUR/USD ${fmt(m.usd, 4)}${m.usd?.value != null ? ` | ${sign(m.usd.changePct)}% (dolar)` : ""}`);
     L.push(`  VIX   : ${fmt(m.vix)}`);
     for (const k of ["us10y", "usd", "vix"]) {
@@ -497,6 +538,9 @@ function render(a, news, paragraphs, bars) {
   });
   L.push("═".repeat(64));
   L.push(`  REKOMENDASI: ${a.reco}`);
+  if (a.levels) {
+    L.push(`  Entry: ${f2(a.levels.entry)} | SL: ${f2(a.levels.sl)} | TP1: ${f2(a.levels.tp1)} | TP2: ${f2(a.levels.tp2)} | ATR(14): ${f2(a.levels.atr)}`);
+  }
   L.push("═".repeat(64));
   L.push("");
   return L.join("\n");
