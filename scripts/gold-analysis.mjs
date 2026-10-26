@@ -700,8 +700,19 @@ function buildMessage(a, paragraphs) {
     `RSI(14): <b>${rsiTxt}</b>`,
     `SMA(20): ${f2(a.sma20)} | SMA(50): ${f2(a.sma50)}`,
     `Rentang 50h: ${f2(a.lo50)} – ${f2(a.hi50)}`,
+    Number.isFinite(a.adx) ? `ADX(14): <b>${a.adx.toFixed(1)}</b> (${a.adxRegime || "n/a"})` : null,
+    a.divergence && (a.divergence.bullish || a.divergence.bearish)
+      ? `Divergence: <b>${a.divergence.bullish ? "Bullish" : ""}${a.divergence.bullish && a.divergence.bearish ? "/" : ""}${a.divergence.bearish ? "Bearish" : ""} RSI</b>`
+      : null,
+    a.pivots ? (() => {
+      const p = a.pivots, c = a.last.close;
+      const arr = [{k:"S2",v:p.s2},{k:"S1",v:p.s1},{k:"PP",v:p.pp},{k:"R1",v:p.r1},{k:"R2",v:p.r2},{k:"Fib38.2",v:p.fib?.[0]},{k:"Fib50",v:p.fib?.[1]},{k:"Fib61.8",v:p.fib?.[2]}];
+      let best=null,md=Infinity;
+      for (const x of arr) if (x.v!=null){const d=Math.abs(x.v-c);if(d<md){md=d;best=x;}}
+      return best ? `S/R/Fib terdekat: <b>${best.k} ${f2(best.v)}</b> (Δ${f2(md)})` : null;
+    })() : null,
     "",
-  ];
+  ].filter(Boolean);
   for (const p of paragraphs) L.push(esc(p), "");
   L.push(`${icon} <b>Rekomendasi: ${a.reco}</b>`);
   L.push(`<i>Skor ${a.score} · ${esc(a.reasons.join(", ") || "netral")}</i>`);
