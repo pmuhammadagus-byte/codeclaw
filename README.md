@@ -78,6 +78,14 @@ node -v   # harus v22.5.0 atau lebih baru
 
 ## Instalasi
 
+### One-line install (disarankan)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pmuhammadagus-byte/codeclaw/main/install.sh | bash
+```
+
+Script akan deteksi OS, install Node.js 22.5+ jika perlu, clone repo ke `~/codeclaw`, dan siapkan `config.json`.
+
 ### Termux (Android)
 
 Install Termux dari **F-Droid**, jangan dari Play Store (versinya usang dan tidak bisa `pkg upgrade` normal).
