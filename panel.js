@@ -52,8 +52,9 @@ async function mainMenu() {
     console.log(`  ${C.cyan}[4]${C.reset} Config tools`);
     console.log(`  ${C.cyan}[5]${C.reset} Web Search (Exa)`);
     console.log(`  ${C.cyan}[6]${C.reset} Audio & Voice (Groq)`);
-    console.log(`  ${C.cyan}[7]${C.reset} ${C.green}Start agent (CLI)${C.reset}`);
-    console.log(`  ${C.cyan}[8]${C.reset} ${C.green}Start Telegram bot${C.reset}`);
+    console.log(`  ${C.cyan}[7]${C.reset} Market Data (Twelve Data)`);
+    console.log(`  ${C.cyan}[8]${C.reset} ${C.green}Start agent (CLI)${C.reset}`);
+    console.log(`  ${C.cyan}[9]${C.reset} ${C.green}Start Telegram bot${C.reset}`);
     console.log();
     console.log(`  ${C.dim}[q] Quit${C.reset}`);
     console.log();
@@ -66,8 +67,9 @@ async function mainMenu() {
     else if (ch === "4") await configMenu();
     else if (ch === "5") await webMenu();
     else if (ch === "6") await audioMenu();
-    else if (ch === "7") return startAgent();
-    else if (ch === "8") return startTelegram();
+    else if (ch === "7") await twelvedataMenu();
+    else if (ch === "8") return startAgent();
+    else if (ch === "9") return startTelegram();
   }
 }
 
@@ -283,6 +285,46 @@ async function audioMenu() {
       if (raw.raw.audio) delete raw.raw.audio.groqApiKey;
       saveConfig(raw, CONFIG_PATH);
       console.log(`\n  ${C.green}✅ Groq Key dihapus${C.reset}`);
+      await pause();
+    }
+  }
+}
+
+
+async function twelvedataMenu() {
+  while (true) {
+    const cfg = load();
+    const tdKey = cfg.raw.twelvedata?.apiKey || "";
+    box("Market Data Settings");
+    console.log(`  Provider  : Twelve Data`);
+    console.log(`  API Key   : ${tdKey ? "***" + tdKey.slice(-6) : C.dim + "(not set)" + C.reset}`);
+    console.log();
+    divider();
+    console.log(`  ${C.cyan}[1]${C.reset} Set Twelve Data API Key`);
+    console.log(`  ${C.cyan}[2]${C.reset} Hapus API Key`);
+    console.log();
+    console.log(`  ${C.dim}[b] Back${C.reset}    ${C.dim}[q] Quit${C.reset}`);
+    console.log();
+    const ch = (await ask("  ❯ ")).trim().toLowerCase();
+    
+    if (ch === "b") return;
+    if (ch === "q") process.exit(0);
+    if (ch === "1") {
+      console.log(`\n  ${C.dim}Buka https://twelvedata.com/account/api-keys${C.reset}`);
+      const key = (await ask("  Twelve Data API Key: ")).trim();
+      if (key) {
+        const raw = load();
+        raw.raw.twelvedata = raw.raw.twelvedata || {};
+        raw.raw.twelvedata.apiKey = key;
+        saveConfig(raw, CONFIG_PATH);
+        console.log(`\n  ${C.green}✅ Twelve Data API Key disimpan${C.reset}`);
+      }
+      await pause();
+    } else if (ch === "2") {
+      const raw = load();
+      if (raw.raw.twelvedata) delete raw.raw.twelvedata.apiKey;
+      saveConfig(raw, CONFIG_PATH);
+      console.log(`\n  ${C.green}✅ API Key dihapus${C.reset}`);
       await pause();
     }
   }
