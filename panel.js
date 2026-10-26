@@ -15,19 +15,12 @@ const clear = () => process.stdout.write("\x1b[2J\x1b[H");
 
 const LOGO = `
 ${C.cyan}${C.bold}
- ██████╗ ██████╗ ██████╗ ███████╗
-██╔════╝██╔═══██╗██╔══██╗██╔════╝
-██║     ██║   ██║██║  ██║█████╗  
-██║     ██║   ██║██║  ██║██╔══╝  
-╚██████╗╚██████╔╝██████╔╝███████╗
- ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝
-
- ██████╗██╗      █████╗ ██╗    ██╗
-██╔════╝██║     ██╔══██╗██║    ██║
-██║     ██║     ███████║██║ █╗ ██║
-██║     ██║     ██╔══██║██║███╗██║
-╚██████╗███████╗██║  ██║╚███╔███╔╝
- ╚═════╝╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝
+  ██████╗ ██████╗ ███████╗██████╗ ██████╗ ██╗      █████╗ ██╗    ██╗
+  ██╔════╝██╔═══██╗██╔════╝██╔══██╗██╔══██╗██║     ██╔══██╗██║    ██║
+  ██║     ██║   ██║█████╗  ██████╔╝██████╔╝██║     ███████║██║ █╗ ██║
+  ██║     ██║   ██║██╔══╝  ██╔══██╗██╔══██╗██║     ██╔══██║██║███╗██║
+  ╚██████╗╚██████╔╝███████╗██║  ██║██████╔╝███████╗██║  ██║╚███╔███╔╝
+   ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝
 ${C.reset}
 ${C.dim}  Senior Software Engineer & AI Agent${C.reset}
 `;
@@ -35,14 +28,14 @@ ${C.dim}  Senior Software Engineer & AI Agent${C.reset}
 function box(title) {
   clear();
   console.log(LOGO);
-  const w = 62;
+  const w = Math.min(46, (process.stdout.columns || 80) - 4);
   console.log(C.cyan + C.bold + "╔" + "═".repeat(w) + "╗" + C.reset);
   console.log(C.cyan + C.bold + "║  " + title.padEnd(w - 2) + "║" + C.reset);
   console.log(C.cyan + C.bold + "╚" + "═".repeat(w) + "╝" + C.reset);
   console.log();
 }
 
-function divider() { console.log(C.dim + "─".repeat(64) + C.reset); console.log(); }
+function divider() { console.log(C.dim + "─".repeat(50) + C.reset); console.log(); }
 function load() { const c = loadConfig(CONFIG_PATH); migrateIfNeeded(c, CONFIG_PATH); return loadConfig(CONFIG_PATH); }
 function maskToken(t) { return t ? "***" + t.slice(-8) : "(not set)"; }
 function pause() { return ask("  Press Enter..."); }
