@@ -184,11 +184,13 @@ async function telegramMenu() {
     console.log(`  Status:    ${t.enabled ? C.green + "ENABLED" + C.reset : C.dim + "DISABLED" + C.reset}`);
     console.log(`  Token:     ${maskToken(t.botToken)}`);
     console.log(`  Allowed:   ${t.allowedUserIds.length ? t.allowedUserIds.join(", ") : C.dim + "(kosong = semua user)" + C.reset}`);
+    console.log(`  Chat ID:   ${t.chatId ? t.chatId : C.dim + "(kosong = notifikasi cron gagal)" + C.reset}`);
     console.log();
     divider();
     console.log(`  ${C.cyan}[1]${C.reset} ${t.enabled ? "Disable" : "Enable"} telegram channel`);
     console.log(`  ${C.cyan}[2]${C.reset} Set bot token`);
     console.log(`  ${C.cyan}[3]${C.reset} Allow user (add to allowlist)`);
+    console.log(`  ${C.cyan}[4]${C.reset} Set chat ID (tujuan notifikasi)`);
     console.log();
     console.log(`  ${C.dim}[b] Back${C.reset}    ${C.dim}[q] Quit${C.reset}`);
     console.log();
@@ -225,6 +227,16 @@ async function telegramMenu() {
         saveConfig(raw, CONFIG_PATH);
         console.log(`\n  ${C.green}✅ User ${id} diizinkan${C.reset}`);
       }
+      await pause();
+    } else if (ch === "4") {
+      const id = (await ask("\n  Chat ID (angka, kosongkan untuk hapus): ")).trim();
+      const raw = load();
+      raw.raw.channels = raw.raw.channels || {};
+      raw.raw.channels.telegram = raw.raw.channels.telegram || { accounts: { default: {} } };
+      raw.raw.channels.telegram.accounts = raw.raw.channels.telegram.accounts || { default: {} };
+      raw.raw.channels.telegram.accounts.default.chatId = id;
+      saveConfig(raw, CONFIG_PATH);
+      console.log(`\n  ${C.green}✅ Chat ID ${id ? "disimpan: " + id : "dihapus"}${C.reset}`);
       await pause();
     }
   }

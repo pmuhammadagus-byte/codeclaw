@@ -13,7 +13,6 @@ import { TelegramAPI } from "../lib/telegram-api.js";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SYMBOL = "XAU/USD";
 const TIMEOUT = 20_000;
-const CHAT_ID = "6206096363";
 
 const LOG_PATH = join(ROOT, "gold.log");
 const LOG_MAX = 1024 * 1024; // 1 MB
@@ -94,7 +93,8 @@ async function loadConfig() {
   const key = cfg?.twelvedata?.apiKey;
   if (!key) throw new Error("twelvedata.apiKey tidak ditemukan di config.json");
   const botToken = cfg?.channels?.telegram?.accounts?.default?.botToken ?? "";
-  return { twelveKey: key, exaKey: cfg?.web?.exaApiKey ?? "", botToken };
+  const chatId = cfg?.channels?.telegram?.accounts?.default?.chatId ?? "";
+  return { twelveKey: key, exaKey: cfg?.web?.exaApiKey ?? "", botToken, chatId };
 }
 
 async function fetchGold(apiKey) {
@@ -547,9 +547,10 @@ function buildMessage(a, paragraphs) {
   return msg.length > 4000 ? msg.slice(0, 3950) + "\n…" : msg;
 }
 
-async function sendTelegram(botToken, text) {
+async function sendTelegram(botToken, text, chatId) {
   if (!botToken) return { sent: false, reason: "botToken kosong di config.json" };
-  const res = await new TelegramAPI(botToken).sendMessage(CHAT_ID, text);
+  if (!chatId) return { sent: false, reason: "chatId kosong di config.json (panel → [2] Telegram → [4])" };
+  const res = await new TelegramAPI(botToken).sendMessage(chatId, text);
   return { sent: true, messageId: res?.message_id };
 }
 
@@ -564,7 +565,7 @@ async function main({ notify = true } = {}) {
     );
   }
 
-  const { twelveKey, exaKey, botToken } = await loadConfig();
+  const { twelveKey, exaKey, botToken, chatId } = await loadConfig();
   const [bars, news, macro] = await Promise.all([
     fetchGold(twelveKey),
     fetchNews(exaKey),
@@ -587,7 +588,7 @@ async function main({ notify = true } = {}) {
   let tg = { sent: false, reason: "dimatikan (--no-telegram)" };
   if (notify) {
     try {
-      tg = await sendTelegram(botToken, buildMessage(a, paragraphs));
+      tg = await sendTelegram(botToken, buildMessage(a, paragraphs), chatId);
     } catch (e) {
       tg = { sent: false, reason: e.message };
       console.error(`[telegram] gagal: ${e.message}`);
