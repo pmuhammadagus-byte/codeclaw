@@ -56,21 +56,42 @@ nap() {
 # Probe: apakah lingkungan ini masih bisa exec binary eksternal?
 # Di PRoot/Android yang degradasi, fork/exec hang tanpa error — akibatnya
 # `stop` sukses tapi `start` gagal = bot mati permanen. Deteksi lebih dulu.
-exec_ok() {
-  ( : ) >/dev/null 2>&1 &            # fork saja, tanpa exec
-  local fp=$!
-  [[ -n $fp ]] || return 1
-  kill -0 "$fp" 2>/dev/null || { wait "$fp" 2>/dev/null; return 1; }
-  wait "$fp" 2>/dev/null
+#
+# PENTING: probe ini sengaja TIDAK memakai `wait` (builtin) karena `wait`
+# bisa memblokir lama justru saat fork/exec sedang lambat — persis kondisi
+# yang ingin dideteksi. Untuk mendeteksi selesai, pakai kill -0 + cek zombie.
+running() {
+  local p="$1" st
+  [[ -n $p && -d /proc/$p ]] || return 1
+  st="$(awk '{print $3}' "/proc/$p/stat" 2>/dev/null)"
+  [[ -n $st && $st != Z ]]     # zombie = sudah selesai, jangan dianggap hidup
+}
 
-  ( /bin/true ) >/dev/null 2>&1 &    # fork + exec
-  local bp=$!
-  local end=$(( SECONDS + 5 ))
+exec_ok() {
+  local timeout="${CODECLAW_PROBE_TIMEOUT:-15}" end pf bp
+
+  # 1) fork saja, tanpa exec. Subshell selesai sangat cepat.
+  ( : ) >/dev/null 2>&1 &
+  pf=$!
+  [[ -n $pf ]] || return 1
+  end=$(( SECONDS + timeout ))
   while (( SECONDS < end )); do
-    kill -0 "$bp" 2>/dev/null || { wait "$bp" 2>/dev/null; return 0; }
+    running "$pf" || break
+    sleep 0.1 2>/dev/null || nap 1
+  done
+  if running "$pf"; then kill -KILL "$pf" 2>/dev/null; return 1; fi
+  wait "$pf" 2>/dev/null || :   # reap; proses sudah selesai jadi tidak memblokir
+
+  # 2) fork + exec binary eksternal — ini yang sebenarnya diuji.
+  ( /bin/true ) >/dev/null 2>&1 &
+  bp=$!
+  end=$(( SECONDS + timeout ))
+  while (( SECONDS < end )); do
+    running "$bp" || { wait "$bp" 2>/dev/null || :; return 0; }
+    sleep 0.1 2>/dev/null || nap 1
   done
   kill -KILL "$bp" 2>/dev/null
-  wait "$bp" 2>/dev/null
+  wait "$bp" 2>/dev/null || :
   return 1
 }
 

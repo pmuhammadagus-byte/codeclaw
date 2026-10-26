@@ -32,3 +32,4 @@ node_modules/
 *.pid
 .health
 config.json
+.cron-state.json
