@@ -34,3 +34,9 @@ node_modules/
 config.json
 .cron-state.json
 .restarts
+
+# Runtime files (jangan di-push)
+*.pid
+*.lock
+.restarts
+telegram.pid
