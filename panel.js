@@ -444,7 +444,7 @@ async function main() {
   }
   rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   rl.on("SIGINT", () => { console.log("\n"); rl.close(); process.exit(0); });
-  try { await mainMenu(); } finally { if (rl) rl.close(); }
+  try { await mainMenu(); process.exit(0); } finally { if (rl) rl.close(); }
 }
 
 main().catch((e) => { console.error(`\n${C.red}Error: ${e.message}${C.reset}`); process.exit(1); });
