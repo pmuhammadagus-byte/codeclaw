@@ -33,3 +33,4 @@ node_modules/
 .health
 config.json
 .cron-state.json
+.restarts
