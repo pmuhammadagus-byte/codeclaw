@@ -614,6 +614,19 @@ function render(a, news, paragraphs, bars) {
   L.push(`  RSI(14) : ${Number.isFinite(a.rsiVal) ? a.rsiVal.toFixed(2) : "n/a"}`);
   L.push(`  SMA(20) : ${f2(a.sma20)}`);
   L.push(`  SMA(50) : ${f2(a.sma50)}`);
+  if (Number.isFinite(a.adx)) L.push(`  ADX(14) : ${a.adx.toFixed(1)} (${a.adxRegime || "n/a"})`);
+  if (a.divergence) {
+    const d = a.divergence;
+    if (d.bullish || d.bearish) L.push(`  Div RSI : ${d.bullish ? "BULLISH" : ""}${d.bullish && d.bearish ? "/" : ""}${d.bearish ? "BEARISH" : ""}`);
+    else L.push("  Div RSI : Tidak ada");
+  }
+  if (a.pivots) {
+    const p = a.pivots, c = a.last.close;
+    const arr = [{k:"S2",v:p.s2},{k:"S1",v:p.s1},{k:"PP",v:p.pp},{k:"R1",v:p.r1},{k:"R2",v:p.r2},{k:"Fib38.2",v:p.fib?.[0]},{k:"Fib50",v:p.fib?.[1]},{k:"Fib61.8",v:p.fib?.[2]}];
+    let best=null,md=Infinity;
+    for (const x of arr) if (x.v!=null){const d=Math.abs(x.v-c);if(d<md){md=d;best=x;}}
+    if (best) L.push(`  S/R/Fib : Terdekat ${best.k} ${f2(best.v)} (Δ${f2(md)})`);
+  }
   if (a.macro) {
     const m = a.macro;
     const fmt = (x, d = 2, suf = "") => (x?.value == null ? "n/a" : `${x.value.toFixed(d)}${suf} (${x.date})`);
