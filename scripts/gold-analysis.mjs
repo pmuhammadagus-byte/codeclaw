@@ -85,7 +85,78 @@ export function rsi(values, period = 14) {
   return 100 - 100 / (1 + rs);
 }
 
-/** ATR Wilder(14). Mengembalikan null kalau data belum cukup. */
+/** ADX(14) Wilder. Mengembalikan null kalau data kurang. */
+export function adx(bars, period = 14) {
+  if (!Array.isArray(bars) || bars.length < period * 2 + 1) return null;
+  const trs = [], plusDM = [], minusDM = [];
+  for (let i = 1; i < bars.length; i++) {
+    const h = bars[i].high, l = bars[i].low, pc = bars[i - 1].close, ph = bars[i - 1].high, pl = bars[i - 1].low;
+    const upMove = h - ph, downMove = pl - l;
+    plusDM.push(upMove > downMove && upMove > 0 ? upMove : 0);
+    minusDM.push(downMove > upMove && downMove > 0 ? downMove : 0);
+    trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+  }
+  // Seed
+  let tr = trs.slice(0, period).reduce((a, b) => a + b, 0);
+  let pDM = plusDM.slice(0, period).reduce((a, b) => a + b, 0);
+  let mDM = minusDM.slice(0, period).reduce((a, b) => a + b, 0);
+  const dxs = [];
+  for (let i = period; i < trs.length; i++) {
+    tr = tr - tr / period + trs[i];
+    pDM = pDM - pDM / period + plusDM[i];
+    mDM = mDM - mDM / period + minusDM[i];
+    const pDI = tr ? (pDM / tr) * 100 : 0;
+    const mDI = tr ? (mDM / tr) * 100 : 0;
+    const dx = (pDI + mDI) ? (Math.abs(pDI - mDI) / (pDI + mDI)) * 100 : 0;
+    dxs.push(dx);
+  }
+  if (dxs.length < period) return null;
+  let adxVal = dxs.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = period; i < dxs.length; i++) {
+    adxVal = (adxVal * (period - 1) + dxs[i]) / period;
+  }
+  return adxVal;
+}
+
+/** RSI Divergence: bandingkan 2 swing terakhir harga vs RSI. */
+export function rsiDivergence(bars, period = 14) {
+  if (!Array.isArray(bars) || bars.length < period + 5) return null;
+  const closes = bars.map((b) => b.close);
+  // Swing lows/highs sederhana: bar yang lebih rendah/tinggi dari 2 tetangga.
+  const lows = [], highs = [];
+  for (let i = 2; i < bars.length - 2; i++) {
+    if (bars[i].low < bars[i - 1].low && bars[i].low < bars[i - 2].low &&
+        bars[i].low < bars[i + 1].low && bars[i].low < bars[i + 2].low) lows.push(i);
+    if (bars[i].high > bars[i - 1].high && bars[i].high > bars[i - 2].high &&
+        bars[i].high > bars[i + 1].high && bars[i].high > bars[i + 2].high) highs.push(i);
+  }
+  if (lows.length < 2 && highs.length < 2) return null;
+  const rsiVals = closes.map((_, i) => rsi(closes.slice(0, i + 1), period));
+  let bull = false, bear = false;
+  if (lows.length >= 2) {
+    const a = lows[lows.length - 2], b = lows[lows.length - 1];
+    if (bars[b].low < bars[a].low && rsiVals[b] > rsiVals[a]) bull = true;
+  }
+  if (highs.length >= 2) {
+    const a = highs[highs.length - 2], b = highs[highs.length - 1];
+    if (bars[b].high > bars[a].high && rsiVals[b] < rsiVals[a]) bear = true;
+  }
+  return { bullish: bull, bearish: bear };
+}
+
+/** Pivot Point klasik + Fibonacci Retracement dari 50 bar terakhir. */
+export function pivotLevels(bars) {
+  if (!Array.isArray(bars) || bars.length < 2) return null;
+  const hi = Math.max(...bars.map((b) => b.high));
+  const lo = Math.min(...bars.map((b) => b.low));
+  const cl = bars[bars.length - 1].close;
+  const pp = (hi + lo + cl) / 3;
+  const r1 = 2 * pp - lo, r2 = pp + (hi - lo);
+  const s1 = 2 * pp - hi, s2 = pp - (hi - lo);
+  const range = hi - lo;
+  const fib = [0.382, 0.5, 0.618].map((f) => lo + range * f);
+  return { pp, r1, r2, s1, s2, fib, hi, lo };
+}
 export function atr(bars, period = 14) {
   if (!Array.isArray(bars) || bars.length < period + 1) return null;
   const trs = [];
@@ -387,6 +458,42 @@ function analyze(bars, articles = [], macro = null) {
   if (news.score > 0) { score += news.score; reasons.push("berita cenderung dovish"); }
   else if (news.score < 0) { score -= 1; reasons.push("berita cenderung hawkish"); }
 
+  // ── RSI DIVERGENCE ─────────────────────────────────────
+  const div = rsiDivergence(bars, 14);
+  if (div?.bullish) { score += 1; reasons.push("Bullish RSI divergence terdeteksi"); }
+  if (div?.bearish) { score -= 1; reasons.push("Bearish RSI divergence terdeteksi"); }
+
+  // ── ADX REGIM ──────────────────────────────────────────
+  // < 20 = sideways (kurangi bobot sinyal RSI), > 25 = trending (beri bobot)
+  const adxVal = adx(bars, 14);
+  let adxRegime = "unknown";
+  if (adxVal != null) {
+    if (adxVal < 20) {
+      adxRegime = "sideways";
+      if (rsiVal < 30) { score -= 0; /* indikator rawan false signal - biarkan, namun catat */ }
+      reasons.push(`ADX ${adxVal.toFixed(1)} < 20 (sideways, perhitungkan RSI dengan hati-hati)`);
+    } else if (adxVal > 25) {
+      adxRegime = "trending";
+      if (rsiVal < 30) { score += 1; reasons.push(`ADX ${adxVal.toFixed(1)} > 25 (trending, konfirmasi oversold lebih kuat)`); }
+      else if (rsiVal > 70) { score -= 1; reasons.push(`ADX ${adxVal.toFixed(1)} > 25 (trending, konfirmasi overbought lebih kuat)`); }
+    }
+  }
+
+  // ── S/R OTOMATIS ───────────────────────────────────────
+  const piv = pivotLevels(bars.slice(-50));
+  if (piv) {
+    const levelsAll = [piv.s2, piv.s1, piv.pp, piv.r1, piv.r2, ...piv.fib];
+    let closest = null, minDist = Infinity;
+    for (const lv of levelsAll) {
+      if (lv == null) continue;
+      const d = Math.abs(lv - last.close);
+      if (d < minDist) { minDist = d; closest = lv; }
+    }
+    if (closest != null) {
+      reasons.push(`Level terdekat: ${closest.toFixed(2)} (S/R/Fib)`);
+    }
+  }
+
   // ── MAKRO ───────────────────────────────────────────────
   // Dibatasi ±2 total agar makro mengoreksi, bukan mendominasi, sinyal teknikal.
   // Ambang: yield ±10bps dan DXY ±0,5% per 5 sesi, VIX level 20/28.
@@ -437,7 +544,7 @@ function analyze(bars, articles = [], macro = null) {
       }
     : null;
 
-  return { last, rsiVal, sma20, sma50, changePct, hi50, lo50, score, reasons, reco, levels, newsSignal: news, macro, macroScore };
+  return { last, rsiVal, sma20, sma50, changePct, hi50, lo50, score, reasons, reco, levels, divergence: div, adx: adxVal, adxRegime, pivots: piv, newsSignal: news, macro, macroScore };
 }
 
 function buildAnalysis(a, news, articles = []) {
