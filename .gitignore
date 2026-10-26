@@ -19,27 +19,19 @@ skills/
 cron.log
 watchdog.log
 watchdog-counter.txt
-
 # === Node & OS ===
 node_modules/
 .DS_Store
-
 # === Backup files ===
 *.bak
 *.bak.*
-
 # Runtime files (jangan di-push)
-*.pid
 .health
-config.json
 .cron-state.json
 .restarts
-
-# Runtime files (jangan di-push)
-*.pid
 *.lock
-.restarts
 telegram.pid
 supervisor.pid
 supervisor.lock
 .supervisor.lock
+*.swp
