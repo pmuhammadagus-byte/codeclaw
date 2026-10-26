@@ -8,70 +8,112 @@ import { loadConfig, saveConfig, listModels, setActiveModel, migrateIfNeeded } f
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, "config.json");
 
-const C = { reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m", cyan: "\x1b[36m", green: "\x1b[32m", yellow: "\x1b[33m", red: "\x1b[31m", magenta: "\x1b[35m", blue: "\x1b[34m" };
+const C = {
+  reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m",
+  cyan: "\x1b[36m", green: "\x1b[32m", yellow: "\x1b[33m",
+  red: "\x1b[31m", magenta: "\x1b[35m", blue: "\x1b[34m"
+};
+
 let rl;
 const ask = (p) => new Promise(r => rl.question(p, r));
 const clear = () => process.stdout.write("\x1b[2J\x1b[H");
 
-const LOGO = `
-${C.cyan}${C.bold}
-  ██████╗ ██████╗ ███████╗██████╗ ██████╗ ██╗      █████╗ ██╗    ██╗
-  ██╔════╝██╔═══██╗██╔════╝██╔══██╗██╔══██╗██║     ██╔══██╗██║    ██║
-  ██║     ██║   ██║█████╗  ██████╔╝██████╔╝██║     ███████║██║ █╗ ██║
-  ██║     ██║   ██║██╔══╝  ██╔══██╗██╔══██╗██║     ██╔══██║██║███╗██║
-  ╚██████╗╚██████╔╝███████╗██║  ██║██████╔╝███████╗██║  ██║╚███╔███╔╝
-   ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝
-${C.reset}
-${C.dim}  Senior Software Engineer & AI Agent${C.reset}
-`;
+// Satu sumber lebar untuk semua elemen
+const W = () => Math.min(50, (process.stdout.columns || 80) - 4);
 
-function box(title) {
+// LOGO: hanya dicetak di main menu (printHeader)
+const LOGO = [
+  " ██████╗ ██████╗ ██████╗ ███████╗",
+  "██╔════╝██╔═══██╗██╔══██╗██╔════╝",
+  "██║     ██║   ██║██║  ██║█████╗  ",
+  "██║     ██║   ██║██║  ██║██╔══╝  ",
+  "╚██████╗╚██████╔╝██████╔╝███████╗",
+  " ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝",
+  "",
+  " ██████╗██╗      █████╗ ██╗    ██╗",
+  "██╔════╝██║     ██╔══██╗██║    ██║",
+  "██║     ██║     ███████║██║ █╗ ██║",
+  "██║     ██║     ██╔══██║██║███╗██║",
+  "╚██████╗███████╗██║  ██║╚███╔███╔╝",
+  " ╚═════╝╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝",
+  "",
+  "  Senior Software Engineer & AI Agent"
+].join("\n");
+
+// ==== UI primitives ====
+
+function hr() {
+  console.log(C.dim + "─".repeat(W()) + C.reset);
+}
+
+function section(title) {
+  console.log(`\n  ${C.bold}${C.cyan}${title}${C.reset}`);
+  hr();
+}
+
+function kv(key, value, color = "") {
+  const c = color || "";
+  console.log(`  ${C.dim}${key.padEnd(12)}${C.reset} ${c}${value}${C.reset}`);
+}
+
+function item(n, label, color = "") {
+  const c = color || "";
+  console.log(`  ${C.cyan}[${n}]${C.reset} ${c}${label}${C.reset}`);
+}
+
+function backBar() {
+  console.log(`\n  ${C.dim}[b] Back    [q] Quit${C.reset}\n`);
+}
+
+function ok(msg)  { console.log(`\n  ${C.green}✅ ${msg}${C.reset}`); }
+function err(msg) { console.log(`\n  ${C.red}❌ ${msg}${C.reset}`); }
+
+function printHeader() {
   clear();
   console.log(LOGO);
-  const w = Math.min(46, (process.stdout.columns || 80) - 4);
-  console.log(C.cyan + C.bold + "╔" + "═".repeat(w) + "╗" + C.reset);
-  console.log(C.cyan + C.bold + "║  " + title.padEnd(w - 2) + "║" + C.reset);
-  console.log(C.cyan + C.bold + "╚" + "═".repeat(w) + "╝" + C.reset);
   console.log();
 }
 
-function divider() { console.log(C.dim + "─".repeat(50) + C.reset); console.log(); }
-function load() { const c = loadConfig(CONFIG_PATH); migrateIfNeeded(c, CONFIG_PATH); return loadConfig(CONFIG_PATH); }
+// ==== Data helpers ====
+
+function load() {
+  const c = loadConfig(CONFIG_PATH);
+  migrateIfNeeded(c, CONFIG_PATH);
+  return loadConfig(CONFIG_PATH);
+}
+
 function maskToken(t) { return t ? "***" + t.slice(-8) : "(not set)"; }
 function pause() { return ask("  Press Enter..."); }
 
-// ============= MAIN =============
+// ==== MAIN MENU ====
+
 async function mainMenu() {
   while (true) {
     const cfg = load();
-    box("CodeClaw Pro — Configuration Panel");
-    
-    console.log(`  ${C.bold}Model${C.reset}`);
-    console.log(`    Active:     ${C.green}${cfg.llm.modelRef}${C.reset}`);
-    console.log();
     const t = cfg.telegram;
-    console.log(`  ${C.bold}Telegram${C.reset}`);
-    console.log(`    Status:     ${t.enabled ? C.green + "ENABLED" + C.reset : C.dim + "DISABLED" + C.reset}`);
-    console.log();
     const exaKey = cfg.raw.web?.exaApiKey || "";
-    console.log(`  ${C.bold}Web Search${C.reset}`);
-    console.log(`    Provider:   ${exaKey ? C.green + "Exa AI" + C.reset : "DuckDuckGo (Free)"}`);
-    console.log();
-    divider();
-    
-    console.log(`  ${C.cyan}[1]${C.reset} Model settings`);
-    console.log(`  ${C.cyan}[2]${C.reset} Telegram channel`);
-    console.log(`  ${C.cyan}[3]${C.reset} Agent settings`);
-    console.log(`  ${C.cyan}[4]${C.reset} Config tools`);
-    console.log(`  ${C.cyan}[5]${C.reset} Web Search (Exa)`);
-    console.log(`  ${C.cyan}[6]${C.reset} Audio & Voice (Groq)`);
-    console.log(`  ${C.cyan}[7]${C.reset} Market Data (Twelve Data)`);
-    console.log(`  ${C.cyan}[8]${C.reset} ${C.green}Start agent (CLI)${C.reset}`);
-    console.log(`  ${C.cyan}[9]${C.reset} ${C.green}Start Telegram bot${C.reset}`);
-    console.log();
-    console.log(`  ${C.dim}[q] Quit${C.reset}`);
-    console.log();
-    
+
+    printHeader();
+    section("Configuration");
+    kv("Model", cfg.llm.modelRef, C.green);
+    kv("Telegram", t.enabled ? "ENABLED" : "DISABLED", t.enabled ? C.green : C.dim);
+    kv("Web Search", exaKey ? "Exa AI" : "DuckDuckGo (Free)");
+
+    section("Settings");
+    item(1, "Model settings");
+    item(2, "Telegram channel");
+    item(3, "Agent settings");
+    item(4, "Config tools");
+    item(5, "Web Search (Exa)");
+    item(6, "Audio & Voice (Groq)");
+    item(7, "Market Data (Twelve Data)");
+
+    section("Actions");
+    item(8, "Start agent (CLI)", C.green);
+    item(9, "Start Telegram bot", C.green);
+
+    console.log(`\n  ${C.dim}[q] Quit${C.reset}\n`);
+
     const ch = (await ask("  ❯ ")).trim().toLowerCase();
     if (ch === "q" || ch === "quit" || ch === "exit") return;
     if (ch === "1") await modelMenu();
@@ -86,22 +128,23 @@ async function mainMenu() {
   }
 }
 
-// ============= WEB MENU =============
+// ==== WEB MENU ====
+
 async function webMenu() {
   while (true) {
     const cfg = load();
     const exaKey = cfg.raw.web?.exaApiKey || "";
-    box("Web Search Settings");
-    console.log(`  Provider  : ${exaKey ? "Exa AI (Premium)" : "DuckDuckGo (Free Scrape)"}`);
-    console.log(`  Exa Key   : ${exaKey ? "***" + exaKey.slice(-6) : C.dim + "(not set)" + C.reset}`);
-    console.log();
-    divider();
-    console.log(`  ${C.cyan}[1]${C.reset} Set Exa API Key (exa.ai)`);
-    console.log(`  ${C.cyan}[2]${C.reset} Hapus Exa API Key`);
-    console.log();
-    console.log(`  ${C.dim}[b] Back${C.reset}    ${C.dim}[q] Quit${C.reset}`);
-    console.log();
-    
+
+    clear();
+    section("Web Search Settings");
+    kv("Provider", exaKey ? "Exa AI (Premium)" : "DuckDuckGo (Free Scrape)");
+    kv("Exa Key", exaKey ? maskToken(exaKey) : "(not set)", exaKey ? "" : C.dim);
+
+    section("Options");
+    item(1, "Set Exa API Key (exa.ai)");
+    item(2, "Remove Exa API Key");
+    backBar();
+
     const ch = (await ask("  ❯ ")).trim().toLowerCase();
     if (ch === "b") return;
     if (ch === "q") process.exit(0);
@@ -113,49 +156,60 @@ async function webMenu() {
         raw.raw.web = raw.raw.web || {};
         raw.raw.web.exaApiKey = key;
         saveConfig(raw, CONFIG_PATH);
-        console.log(`\n  ${C.green}✅ Exa API Key disimpan${C.reset}`);
+        ok("Exa API Key disimpan");
       }
       await pause();
     } else if (ch === "2") {
       const raw = load();
       if (raw.raw.web) delete raw.raw.web.exaApiKey;
       saveConfig(raw, CONFIG_PATH);
-      console.log(`\n  ${C.green}✅ Exa dihapus, fallback ke DuckDuckGo${C.reset}`);
+      ok("Exa dihapus, fallback ke DuckDuckGo");
       await pause();
     }
   }
 }
 
-// ============= MODEL =============
+// ==== MODEL MENU ====
+
 async function modelMenu() {
   while (true) {
     const cfg = load();
-    box("Model Settings");
-    console.log(`  Active: ${C.green}${cfg.llm.modelRef}${C.reset}\n`);
     const models = listModels(cfg);
-    console.log(`  ${C.bold}Available models:${C.reset}`);
+
+    clear();
+    section("Model Settings");
+    kv("Active", cfg.llm.modelRef, C.green);
+    kv("Available", String(models.length));
+
+    console.log();
     for (const m of models) {
       const mark = m.active ? `${C.green}▶${C.reset}` : " ";
-      console.log(`    ${mark} ${m.ref}`);
+      const ref = m.active ? `${C.green}${m.ref}${C.reset}` : m.ref;
+      console.log(`    ${mark} ${ref}`);
     }
-    console.log();
-    divider();
-    console.log(`  ${C.cyan}[1]${C.reset} Set active model`);
-    console.log(`  ${C.cyan}[2]${C.reset} Add provider`);
-    console.log(`  ${C.cyan}[3]${C.reset} Add model to provider`);
-    console.log();
-    console.log(`  ${C.dim}[b] Back${C.reset}    ${C.dim}[q] Quit${C.reset}`);
-    console.log();
+
+    section("Options");
+    item(1, "Set active model");
+    item(2, "Add provider");
+    item(3, "Add model to provider");
+    backBar();
+
     const ch = (await ask("  ❯ ")).trim().toLowerCase();
     if (ch === "b") return;
     if (ch === "q") process.exit(0);
     if (ch === "1") {
       console.log(`\n  ${C.bold}Pilih model:${C.reset}`);
-      models.forEach((m, i) => console.log(`    ${C.cyan}[${i + 1}]${C.reset} ${m.ref}${m.active ? ` ${C.green}(active)${C.reset}` : ""}`));
+      models.forEach((m, i) =>
+        console.log(`    ${C.cyan}[${i + 1}]${C.reset} ${m.ref}${m.active ? ` ${C.green}(active)${C.reset}` : ""}`)
+      );
       const idx = parseInt((await ask("\n  ❯ ")).trim()) - 1;
       if (!isNaN(idx) && idx >= 0 && idx < models.length) {
-        try { setActiveModel(cfg, models[idx].ref, CONFIG_PATH); console.log(`\n  ${C.green}✅ Active: ${models[idx].ref}${C.reset}`); }
-        catch (e) { console.log(`\n  ${C.red}❌ ${e.message}${C.reset}`); }
+        try {
+          setActiveModel(cfg, models[idx].ref, CONFIG_PATH);
+          ok(`Active: ${models[idx].ref}`);
+        } catch (e) {
+          err(e.message);
+        }
       }
       await pause();
     } else if (ch === "2") {
@@ -167,7 +221,7 @@ async function modelMenu() {
         raw.raw.models = raw.raw.models || { providers: {} };
         raw.raw.models.providers[id] = { baseUrl, apiKey, api: "openai-completions", models: [] };
         saveConfig(raw, CONFIG_PATH);
-        console.log(`\n  ${C.green}✅ Provider "${id}" ditambahkan${C.reset}`);
+        ok(`Provider "${id}" ditambahkan`);
       }
       await pause();
     } else if (ch === "3") {
@@ -180,33 +234,37 @@ async function modelMenu() {
           p.models = p.models || [];
           if (!p.models.find(m => m.id === modelId)) p.models.push({ id: modelId, name: modelId });
           saveConfig(raw, CONFIG_PATH);
-          console.log(`\n  ${C.green}✅ ${pid}/${modelId} ditambahkan${C.reset}`);
-        } else { console.log(`\n  ${C.red}❌ Provider tidak ada${C.reset}`); }
+          ok(`${pid}/${modelId} ditambahkan`);
+        } else {
+          err("Provider tidak ada");
+        }
       }
       await pause();
     }
   }
 }
 
-// ============= TELEGRAM =============
+// ==== TELEGRAM MENU ====
+
 async function telegramMenu() {
   while (true) {
     const cfg = load();
     const t = cfg.telegram;
-    box("Telegram Channel");
-    console.log(`  Status:    ${t.enabled ? C.green + "ENABLED" + C.reset : C.dim + "DISABLED" + C.reset}`);
-    console.log(`  Token:     ${maskToken(t.botToken)}`);
-    console.log(`  Allowed:   ${t.allowedUserIds.length ? t.allowedUserIds.join(", ") : C.dim + "(kosong = semua user)" + C.reset}`);
-    console.log(`  Chat ID:   ${t.chatId ? t.chatId : C.dim + "(kosong = notifikasi cron gagal)" + C.reset}`);
-    console.log();
-    divider();
-    console.log(`  ${C.cyan}[1]${C.reset} ${t.enabled ? "Disable" : "Enable"} telegram channel`);
-    console.log(`  ${C.cyan}[2]${C.reset} Set bot token`);
-    console.log(`  ${C.cyan}[3]${C.reset} Allow user (add to allowlist)`);
-    console.log(`  ${C.cyan}[4]${C.reset} Set chat ID (tujuan notifikasi)`);
-    console.log();
-    console.log(`  ${C.dim}[b] Back${C.reset}    ${C.dim}[q] Quit${C.reset}`);
-    console.log();
+
+    clear();
+    section("Telegram Channel");
+    kv("Status", t.enabled ? "ENABLED" : "DISABLED", t.enabled ? C.green : C.dim);
+    kv("Token", maskToken(t.botToken));
+    kv("Allowed", t.allowedUserIds.length ? t.allowedUserIds.join(", ") : "(semua user)", t.allowedUserIds.length ? "" : C.dim);
+    kv("Chat ID", t.chatId || "(belum diset)", t.chatId ? "" : C.dim);
+
+    section("Options");
+    item(1, `${t.enabled ? "Disable" : "Enable"} telegram channel`);
+    item(2, "Set bot token");
+    item(3, "Allow user (add to allowlist)");
+    item(4, "Set chat ID (tujuan notifikasi)");
+    backBar();
+
     const ch = (await ask("  ❯ ")).trim().toLowerCase();
     if (ch === "b") return;
     if (ch === "q") process.exit(0);
@@ -226,19 +284,20 @@ async function telegramMenu() {
         raw.raw.channels.telegram.accounts = raw.raw.channels.telegram.accounts || { default: {} };
         raw.raw.channels.telegram.accounts.default.botToken = token;
         saveConfig(raw, CONFIG_PATH);
-        console.log(`\n  ${C.green}✅ Token disimpan${C.reset}`);
+        ok("Token disimpan");
       }
       await pause();
     } else if (ch === "3") {
       const id = (await ask("\n  User ID (angka): ")).trim();
       if (id) {
         const raw = load();
-        raw.raw.channels.telegram.accounts.default.allowedUserIds = raw.raw.channels.telegram.accounts.default.allowedUserIds || [];
+        raw.raw.channels.telegram.accounts.default.allowedUserIds =
+          raw.raw.channels.telegram.accounts.default.allowedUserIds || [];
         if (!raw.raw.channels.telegram.accounts.default.allowedUserIds.includes(Number(id))) {
-            raw.raw.channels.telegram.accounts.default.allowedUserIds.push(Number(id));
+          raw.raw.channels.telegram.accounts.default.allowedUserIds.push(Number(id));
         }
         saveConfig(raw, CONFIG_PATH);
-        console.log(`\n  ${C.green}✅ User ${id} diizinkan${C.reset}`);
+        ok(`User ${id} diizinkan`);
       }
       await pause();
     } else if (ch === "4") {
@@ -249,48 +308,52 @@ async function telegramMenu() {
       raw.raw.channels.telegram.accounts = raw.raw.channels.telegram.accounts || { default: {} };
       raw.raw.channels.telegram.accounts.default.chatId = id;
       saveConfig(raw, CONFIG_PATH);
-      console.log(`\n  ${C.green}✅ Chat ID ${id ? "disimpan: " + id : "dihapus"}${C.reset}`);
+      ok(`Chat ID ${id ? "disimpan: " + id : "dihapus"}`);
       await pause();
     }
   }
 }
 
-// ============= AGENT =============
+// ==== AGENT ====
+
 async function agentMenu() {
   const cfg = load();
-  box("Agent Settings");
-  console.log(`  Max iterations:  ${cfg.agent.maxToolIterations}`);
-  console.log(`  Approval mode:   ${cfg.agent.approvalMode}`);
-  console.log(`  Brain level:     ${cfg.agent.brainLevel || "normal"}`);
+  clear();
+  section("Agent Settings");
+  kv("Max iter", String(cfg.agent.maxToolIterations));
+  kv("Approval", cfg.agent.approvalMode);
+  kv("Brain", cfg.agent.brainLevel || "normal");
   console.log();
   await pause();
 }
 
-// ============= CONFIG =============
+// ==== CONFIG ====
+
 async function configMenu() {
-  const cfg = load();
-  box("Config Tools");
-  console.log(`  Path:  ${CONFIG_PATH}\n`);
+  clear();
+  section("Config Tools");
+  kv("Path", CONFIG_PATH);
+  console.log();
   await pause();
 }
 
-// ============= START =============
+// ==== AUDIO ====
 
 async function audioMenu() {
   while (true) {
     const cfg = load();
     const groqKey = cfg.raw.audio?.groqApiKey || "";
-    box("Audio & Voice Settings");
-    console.log(`  Engine    : ${groqKey ? "Groq Whisper (Fast)" : "Disabled"}`);
-    console.log(`  Groq Key  : ${groqKey ? "***" + groqKey.slice(-6) : C.dim + "(not set)" + C.reset}`);
-    console.log();
-    divider();
-    console.log(`  ${C.cyan}[1]${C.reset} Set Groq API Key (console.groq.com)`);
-    console.log(`  ${C.cyan}[2]${C.reset} Hapus Groq API Key`);
-    console.log();
-    console.log(`  ${C.dim}[b] Back${C.reset}    ${C.dim}[q] Quit${C.reset}`);
-    console.log();
-    
+
+    clear();
+    section("Audio & Voice Settings");
+    kv("Engine", groqKey ? "Groq Whisper (Fast)" : "Disabled");
+    kv("Groq Key", groqKey ? maskToken(groqKey) : "(not set)", groqKey ? "" : C.dim);
+
+    section("Options");
+    item(1, "Set Groq API Key (console.groq.com)");
+    item(2, "Remove Groq API Key");
+    backBar();
+
     const ch = (await ask("  ❯ ")).trim().toLowerCase();
     if (ch === "b") return;
     if (ch === "q") process.exit(0);
@@ -302,36 +365,37 @@ async function audioMenu() {
         raw.raw.audio = raw.raw.audio || {};
         raw.raw.audio.groqApiKey = key;
         saveConfig(raw, CONFIG_PATH);
-        console.log(`\n  ${C.green}✅ Groq API Key disimpan${C.reset}`);
+        ok("Groq API Key disimpan");
       }
       await pause();
     } else if (ch === "2") {
       const raw = load();
       if (raw.raw.audio) delete raw.raw.audio.groqApiKey;
       saveConfig(raw, CONFIG_PATH);
-      console.log(`\n  ${C.green}✅ Groq Key dihapus${C.reset}`);
+      ok("Groq Key dihapus");
       await pause();
     }
   }
 }
 
+// ==== TWELVEDATA ====
 
 async function twelvedataMenu() {
   while (true) {
     const cfg = load();
     const tdKey = cfg.raw.twelvedata?.apiKey || "";
-    box("Market Data Settings");
-    console.log(`  Provider  : Twelve Data`);
-    console.log(`  API Key   : ${tdKey ? "***" + tdKey.slice(-6) : C.dim + "(not set)" + C.reset}`);
-    console.log();
-    divider();
-    console.log(`  ${C.cyan}[1]${C.reset} Set Twelve Data API Key`);
-    console.log(`  ${C.cyan}[2]${C.reset} Hapus API Key`);
-    console.log();
-    console.log(`  ${C.dim}[b] Back${C.reset}    ${C.dim}[q] Quit${C.reset}`);
-    console.log();
+
+    clear();
+    section("Market Data Settings");
+    kv("Provider", "Twelve Data");
+    kv("API Key", tdKey ? maskToken(tdKey) : "(not set)", tdKey ? "" : C.dim);
+
+    section("Options");
+    item(1, "Set Twelve Data API Key");
+    item(2, "Remove API Key");
+    backBar();
+
     const ch = (await ask("  ❯ ")).trim().toLowerCase();
-    
     if (ch === "b") return;
     if (ch === "q") process.exit(0);
     if (ch === "1") {
@@ -342,18 +406,20 @@ async function twelvedataMenu() {
         raw.raw.twelvedata = raw.raw.twelvedata || {};
         raw.raw.twelvedata.apiKey = key;
         saveConfig(raw, CONFIG_PATH);
-        console.log(`\n  ${C.green}✅ Twelve Data API Key disimpan${C.reset}`);
+        ok("Twelve Data API Key disimpan");
       }
       await pause();
     } else if (ch === "2") {
       const raw = load();
       if (raw.raw.twelvedata) delete raw.raw.twelvedata.apiKey;
       saveConfig(raw, CONFIG_PATH);
-      console.log(`\n  ${C.green}✅ API Key dihapus${C.reset}`);
+      ok("API Key dihapus");
       await pause();
     }
   }
 }
+
+// ==== START ACTIONS ====
 
 async function startAgent() {
   clear();
@@ -369,7 +435,8 @@ async function startTelegram() {
   await import("./telegram.js");
 }
 
-// ============= ENTRY =============
+// ==== ENTRY ====
+
 async function main() {
   if (!fs.existsSync(CONFIG_PATH)) {
     console.error(`${C.red}❌ config.json tidak ada.${C.reset}`);
