@@ -14,5 +14,8 @@
   },
   "optionalDependencies": {
     "undici": "^8.12.3"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
   }
 }
