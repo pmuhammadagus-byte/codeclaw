@@ -50,6 +50,26 @@ const f2 = (n) => (Number.isFinite(n) ? n.toFixed(2) : "n/a");
 const pct = (a, b) => (b ? ((a - b) / b) * 100 : NaN);
 const sign = (n) => (Number.isFinite(n) ? (n >= 0 ? "+" : "") + n.toFixed(2) : "n/a");
 
+// ─────────────────────────── ECONOMIC CALENDAR ───────────────────────────
+
+/** Cek apakah hari ini ada event high-impact (NFP, CPI, FOMC, dll) via ForexFactory. */
+export async function fetchHighImpactToday() {
+  try {
+    const res = await fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json", {
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const today = new Date().toISOString().slice(0, 10);
+    const high = data.filter(
+      (e) => (e.date || "").slice(0, 10) === today && (e.impact || "").toLowerCase().includes("high")
+    );
+    return high.map((e) => e.title).filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
 // ─────────────────────────── INDIKATOR ───────────────────────────
 
 /** SMA sederhana. Butuh minimal `period` nilai. */
@@ -418,7 +438,7 @@ function extractFacts(text) {
 
 // ─────────────────────────── ANALISA ───────────────────────────
 
-function analyze(bars, articles = [], macro = null) {
+function analyze(bars, articles = [], macro = null, highImpactEvents = []) {
   const closes = bars.map((b) => b.close);
   const last = bars[bars.length - 1];
   // ponytail: provider kirim bar Sabtu/Minggu yg stale (close nyaris = Jumat),
@@ -531,6 +551,33 @@ function analyze(bars, articles = [], macro = null) {
   }
 
   const reco = score >= 2 ? "BUY" : score <= -2 ? "SELL" : "WAIT";
+
+  // Paksa WAIT jika ada berita high-impact hari ini (NFP/CPI/FOMC)
+  if (highImpactEvents && highImpactEvents.length > 0) {
+    const names = highImpactEvents.slice(0, 2).join(", ");
+    reasons.unshift(`⛔ High Impact News terdeteksi: ${names} — abaikan sinyal teknikal`);
+    return {
+      last,
+      rsiVal,
+      sma20,
+      sma50,
+      changePct,
+      hi50,
+      lo50,
+      score,
+      reasons,
+      reco: "WAIT (High Impact News: " + names + ")",
+      levels: null,
+      divergence: div,
+      adx: adxVal,
+      adxRegime,
+      pivots: piv,
+      newsSignal: news,
+      macro,
+      macroScore,
+      highImpact: true,
+    };
+  }
 
   const atrVal = atr(bars, 14);
   const slDist = Number.isFinite(atrVal) ? atrVal * 1.5 : null;
@@ -741,14 +788,15 @@ async function main({ notify = true } = {}) {
   }
 
   const { twelveKey, exaKey, botToken, chatId } = await loadConfig();
-  const [bars, news, macro] = await Promise.all([
+  const [bars, news, macro, highImpactEvents] = await Promise.all([
     fetchGold(twelveKey),
     fetchNews(exaKey),
     fetchMacro(twelveKey).catch(() => null),
+    fetchHighImpactToday(),
   ]);
 
   const articles = await deepRead(news, exaKey);
-  const a = analyze(bars, articles, macro);
+  const a = analyze(bars, articles, macro, highImpactEvents || []);
   const paragraphs = buildAnalysis(a, news, articles);
   console.log(render(a, news, paragraphs, bars));
   const good = articles.filter((x) => x.facts.length);
