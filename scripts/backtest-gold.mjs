@@ -2,11 +2,23 @@
 // Backtest XAU/USD sederhana dengan out-of-sample + slippage
 // ponytail: pakai ATR untuk SL/TP, slippage $0.5/oz per trade (spread+slippage)
 
-import { loadConfig } from "../lib/config.js";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SYMBOL = "XAU/USD";
 const INTERVAL = "1day";
 const SLIPPAGE = 0.5;
+
+async function loadConfig() {
+  const p = join(ROOT, "config.json");
+  const raw = await readFile(p, "utf8");
+  const cfg = JSON.parse(raw);
+  const key = cfg?.twelvedata?.apiKey;
+  if (!key) throw new Error("twelvedata.apiKey tidak ditemukan di config.json");
+  return { twelveKey: key };
+}
 
 function sma(values, period) {
   if (!Array.isArray(values) || values.length < period) return null;
@@ -166,7 +178,6 @@ async function main() {
   const candles = await fetchCandles(twelveKey, 200);
   if (candles.length < 150) throw new Error(`Not enough data: ${candles.length} bars`);
 
-  // Out-of-Sample: 100 hari pertama (in-sample) vs 100 hari terakhir (out-of-sample)
   const total = candles.length;
   const split = Math.max(100, total - 100);
   const inSample = candles.slice(0, split);
@@ -174,11 +185,9 @@ async function main() {
 
   console.log(`Data: ${candles.length} bars | In-Sample: ${inSample.length} | Out-of-Sample: ${outSample.length}`);
 
-  // Backtest in-sample
   const tIn = runPeriod(candles, 0, split);
   summarize(`IN-SAMPLE (${inSample[0].date} -> ${inSample.at(-1).date})`, tIn);
 
-  // Backtest out-of-sample (gunakan history penuh untuk indikator)
   const tOut = runPeriod(candles, split, total);
   summarize(`OUT-OF-SAMPLE (${outSample[0].date} -> ${outSample.at(-1).date})`, tOut);
 }
