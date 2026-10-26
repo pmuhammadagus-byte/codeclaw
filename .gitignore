@@ -40,3 +40,6 @@ config.json
 *.lock
 .restarts
 telegram.pid
+supervisor.pid
+supervisor.lock
+.supervisor.lock
