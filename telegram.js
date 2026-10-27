@@ -407,6 +407,18 @@ async function handleCommand(chatId, text, from) {
       await tg.sendMessage(chatId, text, { parse_mode: "Markdown" }).catch(() => {});
       return true;
     }
+    case "/gold": {
+      await tg.sendMessage(chatId, "🥇 Analisis XAU/USD...").catch(() => {});
+      try {
+        const { analyzeGold } = await import("./lib/gold.js");
+        const result = await analyzeGold(CONFIG);
+        await tg.sendMessage(chatId, result, { parse_mode: "Markdown" });
+      } catch (e) {
+        log("gold error: " + e.message);
+        await tg.sendMessage(chatId, "❌ " + e.message);
+      }
+      return true;
+    }
     case "/clear":
       session.clear(chatId); session.todoClear(chatId);
       await tg.sendMessage(chatId, "✅ Cleared");
