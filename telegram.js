@@ -594,7 +594,7 @@ async function main() {
   setTimeout(() => {
     runDailyLearning(llm, msg => log(msg)).catch(e => log("learning startup: " + e.message));
   }, 2 * 60 * 1000);
-  log("🎓 Learning scheduler aktif (check tiap 30m, run tiap 24h)");
+  log("🎓 Learning scheduler aktif (check tiap 30m, run tiap 6h)");
   log(ALLOWED.size ? `Allowlist: ${[...ALLOWED].join(",")}` : "⚠️  Allowlist kosong — semua user bisa pakai");
 
   // Heartbeat independen dari poll loop. Timer tetap jalan walau proses LLM
