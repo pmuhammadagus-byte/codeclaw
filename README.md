@@ -21,6 +21,9 @@ Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, mac
 - **Knowledge base** — riset ArXiv + Hacker News masuk SQLite, otomatis di-inject ke prompt
 - **Multi-channel** — REPL terminal dan bot Telegram
 - **Multi-provider** — format `models.providers`, kompatibel API OpenAI
+- **Cognitive layer** — planner → executor → critic → fixer (level: normal/high/genius)
+- **Experiential memory** — bot belajar dari pengalaman; tersimpan di memory.jsonl, auto-compress >1MB
+- **Autonomous learning** — riset web tiap 6 jam, ekstrak insight, simpan ke memory
 
 <p align="center">
   <img src="assets/terminal.svg" alt="Contoh sesi CodeClaw Pro" width="88%">
@@ -136,6 +139,8 @@ Bisa langsung jalan **tanpa `npm install`** — semua fitur inti pakai modul baw
 ```bash
 node cli.js
 ```
+
+> Wajib: setelah clone/update, jalankan npm install — dependencies wajib: zod (validasi config). Node.js >= 22.5.0.
 
 Opsional: `npm install` hanya untuk memasang **`undici`** (lihat catatan di bawah).
 
@@ -460,6 +465,19 @@ Jika Anda melakukan *fork* dan ingin mengubah kepribadian atau bahasanya, cukup 
 - `SOUL.md`: Karakter, etika, dan gaya bicara.
 - `system.md`: Aturan teknis dan tool calling.
 
+
+## Telegram Commands
+
+| Command | Fungsi |
+|---|---|
+| /start | Mulai bot & lihat info |
+| /help | Bantuan |
+| /status | Status bot |
+| /clear | Reset percakapan |
+| /memory | Lihat 5 pelajaran terakhir yang diingat bot |
+| /learn | Trigger riset mandiri manual (1-2 menit) |
+| /learned | Lihat 5 insight riset terakhir |
+| /whoami | Info akun Telegram Anda |
 
 ## 📄 Lisensi
 MIT
