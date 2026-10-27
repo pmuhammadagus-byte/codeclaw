@@ -10,6 +10,7 @@ import { memorySection, retrieveExperiences, reflectExperience, saveExperience }
 import { distillSkill, improveSkill, autoImproveFailingSkills, isComplexTask } from "./lib/skill-distiller.js";
 import { loadConfig, migrateIfNeeded } from "./lib/config.js";
 import { getBrainPrompt } from "./lib/brain.js";
+import { shouldChunk, saveMission, buildMissionPrompt } from "./lib/long-task.js";
 import { runDailyLearning, readRecentLearning } from "./lib/autonomous-learning.js";
 import { planTask, critiqueResult, fixResult, shouldCritique } from "./lib/cognitive.js";
 
@@ -200,6 +201,19 @@ function buildSystem(chatId) {
 }
 
 async function processMessage(chatId, userInput, from) {
+  // 🛡️ P0-3: LONG-TASK HANDLER
+  if (shouldChunk(userInput)) {
+    const { file, size, lines } = saveMission(chatId, userInput);
+    log(`📄 Misi panjang: ${size}b → ${file}`);
+    try {
+      await tg.sendMessage(chatId,
+        `📄 *Misi diterima*\n\nUkuran: ${(size/1024).toFixed(1)} KB (${lines} baris)\nDisimpan: \`${file}\`\n\nBot akan baca bertahap lalu konfirmasi sebelum eksekusi. Tunggu 30-60 detik...`,
+        { parse_mode: "Markdown" }
+      );
+    } catch {}
+    userInput = buildMissionPrompt(file, size, lines);
+  }
+
   session.add(chatId, { role: "user", content: userInput });
 
   const toolActivity = [];
