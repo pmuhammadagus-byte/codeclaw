@@ -17,6 +17,7 @@ Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, mac
 
 - **30 tools** — file ops, shell, git/gh, web, code indexer, todo, memory, research, skills, brain mode
 - **Self-evolving** — agent menyimpan pengalaman sukses jadi skill reusable
+- **Hermes-style memory** — pengalaman masa lalu otomatis di-inject ke prompt; memory.jsonl dikompresi otomatis jika >1 MB (Fase 6)
 - **Knowledge base** — riset ArXiv + Hacker News masuk SQLite, otomatis di-inject ke prompt
 - **Multi-channel** — REPL terminal dan bot Telegram
 - **Multi-provider** — format `models.providers`, kompatibel API OpenAI
