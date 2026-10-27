@@ -363,7 +363,7 @@ async function handleCommand(chatId, text, from) {
         `• Code indexer (RAG)\n` +
         `• Todo planning\n\n` +
         `*Model aktif:* \`${CONFIG.llm.modelRef}\`\n\n` +
-        `*Commands:* /clear /todo /mem /status /whoami /help\n\n` +
+        `*Commands:* /gold /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
         `Langsung ketik permintaan untuk mulai.`);
       return true;
     case "/memory":
@@ -508,7 +508,7 @@ async function handleCommand(chatId, text, from) {
       return true;
     case "/help":
       await sendText(chatId,
-        `*Commands:*\n/start /clear /todo /mem /status /whoami /help\n\n` +
+        `*Commands:*\n/start /gold /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
         `*Contoh prompt:*\n` +
         `• "clone repo X, baca README, ringkas 5 poin"\n` +
         `• "buat website portfolio di ~/portfolio"\n` +
