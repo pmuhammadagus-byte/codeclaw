@@ -36,3 +36,4 @@ supervisor.lock
 .supervisor.lock
 *.swp
 memory.jsonl
+*.py
