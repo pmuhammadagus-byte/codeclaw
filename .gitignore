@@ -38,3 +38,5 @@ supervisor.lock
 memory.jsonl
 *.py
 fib.py
+learning-log.jsonl
+.learning-state.json

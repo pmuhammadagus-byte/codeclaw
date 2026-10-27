@@ -10,6 +10,7 @@ import { memorySection, retrieveExperiences, reflectExperience, saveExperience }
 import { distillSkill, improveSkill, autoImproveFailingSkills, isComplexTask } from "./lib/skill-distiller.js";
 import { loadConfig, migrateIfNeeded } from "./lib/config.js";
 import { getBrainPrompt } from "./lib/brain.js";
+import { runDailyLearning, readRecentLearning } from "./lib/autonomous-learning.js";
 import { planTask, critiqueResult, fixResult, shouldCritique } from "./lib/cognitive.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -368,6 +369,30 @@ async function handleCommand(chatId, text, from) {
         await tg.sendMessage(chatId, "❌ Gagal membaca memori: " + e.message);
       }
       return true;
+    case "/learn": {
+      await tg.sendMessage(chatId, "🎓 Memulai riset mandiri... (1-2 menit)").catch(() => {});
+      try {
+        const res = await runDailyLearning(llm, msg => log(msg), { force: true });
+        const n = res.results?.length || 0;
+        await tg.sendMessage(chatId, `✅ Selesai. ${n} insight baru dipelajari. Cek /learned`);
+      } catch (e) {
+        await tg.sendMessage(chatId, "❌ Learning gagal: " + e.message);
+      }
+      return true;
+    }
+    case "/learned": {
+      const recents = readRecentLearning(5);
+      if (!recents.length) {
+        await tg.sendMessage(chatId, "📚 Belum ada riset tersimpan. Coba /learn dulu.");
+        return true;
+      }
+      let text = "📚 *5 Riset Terakhir:*\n\n";
+      recents.forEach((r, i) => {
+        text += `${i+1}. *${r.topic}*\n   ${r.insight}\n\n`;
+      });
+      await tg.sendMessage(chatId, text, { parse_mode: "Markdown" }).catch(() => {});
+      return true;
+    }
     case "/clear":
       session.clear(chatId); session.todoClear(chatId);
       await tg.sendMessage(chatId, "✅ Cleared");
@@ -479,6 +504,16 @@ async function main() {
     return;
   }
   log(`Bot: @${me.username} | Brain: ${CONFIG.agent.brainLevel || "normal"} | PID ${process.pid}`);
+
+  // 🎓 Autonomous learning scheduler (30 menit sekali cek, 24 jam sekali eksekusi)
+  const LEARN_INTERVAL = 30 * 60 * 1000;
+  setInterval(() => {
+    runDailyLearning(llm, msg => log(msg)).catch(e => log("learning err: " + e.message));
+  }, LEARN_INTERVAL);
+  setTimeout(() => {
+    runDailyLearning(llm, msg => log(msg)).catch(e => log("learning startup: " + e.message));
+  }, 2 * 60 * 1000);
+  log("🎓 Learning scheduler aktif (check tiap 30m, run tiap 24h)");
   log(ALLOWED.size ? `Allowlist: ${[...ALLOWED].join(",")}` : "⚠️  Allowlist kosong — semua user bisa pakai");
 
   // Heartbeat independen dari poll loop. Timer tetap jalan walau proses LLM
