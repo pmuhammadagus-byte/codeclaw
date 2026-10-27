@@ -203,6 +203,24 @@ async function loadConfig() {
   return { twelveKey: key, exaKey: cfg?.web?.exaApiKey ?? "", botToken, chatId };
 }
 
+async function fetchWithRetry(url, opts = {}, tries = 3) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const res = await fetch(url, { ...opts, signal: AbortSignal.timeout(TIMEOUT) });
+      if (res.status === 429 && i < tries - 1) {
+        await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+        continue;
+      }
+      return res;
+    } catch (e) {
+      lastErr = e;
+      if (i < tries - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
+  }
+  throw lastErr || new Error("fetch failed");
+}
+
 async function fetchGold(apiKey) {
   const url =
     "https://api.twelvedata.com/time_series" +
@@ -210,7 +228,7 @@ async function fetchGold(apiKey) {
     "&interval=1day&outputsize=50&format=JSON" +
     `&apikey=${encodeURIComponent(apiKey)}`;
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT) });
+  const res = await fetchWithRetry(url);
   if (!res.ok) throw new Error(`Twelve Data HTTP ${res.status}`);
   const data = await res.json();
 
@@ -735,7 +753,7 @@ async function rotateLog() {
 // parse_mode=HTML, jadi karakter khusus wajib di-escape.
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-function buildMessage(a, paragraphs) {
+function buildMessage(a, paragraphs, news = [], articles = []) {
   const icon = a.reco === "BUY" ? "🟢" : a.reco === "SELL" ? "🔴" : "⚪️";
   const rsiTxt = Number.isFinite(a.rsiVal) ? a.rsiVal.toFixed(2) : "n/a";
 
@@ -760,7 +778,80 @@ function buildMessage(a, paragraphs) {
     })() : null,
     "",
   ].filter(Boolean);
+  // 🌍 MAKRO
+  if (a.macro) {
+    const m = a.macro;
+    const macroLines = [];
+    if (m.us10y?.value != null) macroLines.push(`US10Y: <b>${Number(m.us10y.value).toFixed(2)}%</b>` + (m.us10y.date ? ` (${esc(m.us10y.date)})` : ""));
+    if (m.realY?.value != null) macroLines.push(`Real Yield: <b>${Number(m.realY.value).toFixed(2)}%</b>` + (m.realY.date ? ` (${esc(m.realY.date)})` : ""));
+    if (m.usd?.value != null) macroLines.push(`USD: ${esc(m.usd.pair || "EUR/USD")} <b>${m.usd.value}</b>` + (m.usd.changePct != null ? ` (${esc(sign(m.usd.changePct))}%)` : ""));
+    if (m.vix?.value != null) macroLines.push(`VIX: <b>${m.vix.value}</b>` + (m.vix.date ? ` (${esc(m.vix.date)})` : ""));
+    if (macroLines.length) {
+      L.push(`🌍 <b>MAKRO</b>`);
+      for (const l of macroLines) L.push(l);
+      if (Number.isFinite(a.macroScore)) L.push(`Skor makro: <b>${sign(a.macroScore)}</b>`);
+      L.push("");
+    }
+  }
+
+  // ⚠️ HIGH IMPACT NEWS
+  const hi = a.highImpactEvents || [];
+  if (hi.length) {
+    const names = hi.map(e => e.event || e.title || e.name || String(e)).filter(Boolean);
+    if (names.length) {
+      L.push(`⚠️ <b>HIGH IMPACT NEWS:</b> ${esc(names.join(", "))}`);
+      L.push(`<i>Sinyal teknikal diabaikan sampai news selesai.</i>`);
+      L.push("");
+    }
+  }
+
   for (const p of paragraphs) L.push(esc(p), "");
+  // 📰 BERITA
+  if (news && news.length) {
+    L.push(`📰 <b>BERITA</b>`);
+    for (const n of news.slice(0, 3)) {
+      const topic = n.topic ? `[${esc(n.topic)}] ` : "";
+      const title = String(n.title || "").slice(0, 70);
+      const url = n.url || "";
+      if (url) L.push(`• ${topic}<a href="${esc(url)}">${esc(title || url)}</a>`);
+      else L.push(`• ${topic}${esc(title)}`);
+    }
+    L.push("");
+  }
+
+  // 📊 ARTIKEL DIBACA
+  if (articles && articles.length) {
+    const good = articles.filter(x => x.facts && x.facts.length).length;
+    L.push(`📊 Artikel dibaca: <b>${good}/${articles.length}</b>`);
+    L.push("");
+  }
+
+  // 🎯 LEVELS — wajib ada (BUY/SELL real, WAIT reference)
+  if (a.levels) {
+    L.push(`🎯 <b>LEVELS — ${a.reco}</b>`);
+    if (a.levels.entry != null) L.push(`• Entry: <b>${f2(a.levels.entry)}</b>`);
+    if (a.levels.sl != null) L.push(`• 🛑 SL: <b>${f2(a.levels.sl)}</b>`);
+    if (a.levels.tp1 != null) L.push(`• 🎯 TP1: <b>${f2(a.levels.tp1)}</b>`);
+    if (a.levels.tp2 != null) L.push(`• 🎯 TP2: <b>${f2(a.levels.tp2)}</b>`);
+    if (a.levels.atr != null) L.push(`• ATR(14): ${f2(a.levels.atr)}`);
+    L.push("");
+  } else if (a.atr && a.last && a.last.close != null) {
+    const bias = a.score >= 0 ? "BUY" : "SELL";
+    const entry = a.last.close;
+    const sl = bias === "BUY" ? entry - a.atr * 1.5 : entry + a.atr * 1.5;
+    const tp1 = bias === "BUY" ? entry + a.atr * 1.5 : entry - a.atr * 1.5;
+    const tp2 = bias === "BUY" ? entry + a.atr * 3   : entry - a.atr * 3;
+    const pct = (x) => (((x - entry) / entry) * 100).toFixed(2);
+    L.push(`🎯 <b>LEVELS — REFERENCE (${bias} bias)</b>`);
+    L.push(`<i>Signal ditahan. Jangan entry sebelum konfirmasi.</i>`);
+    L.push(`• Entry: <b>${f2(entry)}</b>`);
+    L.push(`• 🛑 SL: <b>${f2(sl)}</b> (${pct(sl)}%)`);
+    L.push(`• 🎯 TP1: <b>${f2(tp1)}</b> (${pct(tp1)}%)`);
+    L.push(`• 🎯 TP2: <b>${f2(tp2)}</b> (${pct(tp2)}%)`);
+    L.push(`• ATR(14): ${f2(a.atr)}`);
+    L.push("");
+  }
+
   L.push(`${icon} <b>Rekomendasi: ${a.reco}</b>`);
   L.push(`<i>Skor ${a.score} · ${esc(a.reasons.join(", ") || "netral")}</i>`);
 
@@ -797,8 +888,29 @@ async function main({ notify = true } = {}) {
 
   const articles = await deepRead(news, exaKey);
   const a = analyze(bars, articles, macro, highImpactEvents || []);
+  // Compute ATR for reference levels in WAIT case
+  if (!a.levels?.atr && bars && bars.length >= 15) {
+    try {
+      const highs = bars.map(b => parseFloat(b.high));
+      const lows = bars.map(b => parseFloat(b.low));
+      const closes = bars.map(b => parseFloat(b.close));
+      const trs = [];
+      for (let i = 1; i < bars.length; i++) {
+        trs.push(Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i-1]), Math.abs(lows[i] - closes[i-1])));
+      }
+      a.atr = trs.slice(-14).reduce((s, x) => s + x, 0) / Math.min(14, trs.length);
+    } catch (e) { console.error("ATR compute error:", e.message); }
+  }
+  a.highImpactEvents = highImpactEvents || [];
   const paragraphs = buildAnalysis(a, news, articles);
-  console.log(render(a, news, paragraphs, bars));
+  if (!notify) {
+    // --no-telegram mode: print Telegram-ready HTML untuk handler capture
+    console.log("===TG_START===");
+    console.log(buildMessage(a, paragraphs, news, articles));
+    console.log("===TG_END===");
+  } else {
+    console.log(render(a, news, paragraphs, bars));
+  }
   const good = articles.filter((x) => x.facts.length);
   console.log(
     `  ARTIKEL DIBACA: ${good.length}/${articles.length}\n` +
@@ -811,7 +923,7 @@ async function main({ notify = true } = {}) {
   let tg = { sent: false, reason: "dimatikan (--no-telegram)" };
   if (notify) {
     try {
-      tg = await sendTelegram(botToken, buildMessage(a, paragraphs), chatId);
+      tg = await sendTelegram(botToken, buildMessage(a, paragraphs, news, articles), chatId);
     } catch (e) {
       tg = { sent: false, reason: e.message };
       console.error(`[telegram] gagal: ${e.message}`);
