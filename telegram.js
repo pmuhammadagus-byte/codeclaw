@@ -328,6 +328,23 @@ async function handleCommand(chatId, text, from) {
         `*Commands:* /clear /todo /mem /status /whoami /help\n\n` +
         `Langsung ketik permintaan untuk mulai.`);
       return true;
+    case "/memory":
+      try {
+        const mems = fs.readFileSync(path.join(__dirname, "memory.jsonl"), "utf8").split("\n").filter(Boolean).slice(-5).reverse();
+        if (mems.length === 0) {
+          await tg.sendMessage(chatId, "🧠 Memori masih kosong. Ajak saya mengerjakan tugas!");
+        } else {
+          let text = "🧠 *5 Pelajaran Terakhir yang Saya Ingat:*\n\n";
+          mems.forEach((m, i) => {
+            const d = JSON.parse(m);
+            text += `${i + 1}. _Task:_ ${d.task.slice(0, 40)}...\n   💡 *Insight:* ${d.insight}\n\n`;
+          });
+          await tg.sendMessage(chatId, text, { parse_mode: "Markdown" });
+        }
+      } catch (e) {
+        await tg.sendMessage(chatId, "❌ Gagal membaca memori: " + e.message);
+      }
+      return true;
     case "/clear":
       session.clear(chatId); session.todoClear(chatId);
       await tg.sendMessage(chatId, "✅ Cleared");
