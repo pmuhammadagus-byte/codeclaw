@@ -376,6 +376,10 @@ Level tersimpan di `agent.brainLevel` dan prompt-nya di-inject tiap turn dari `l
 - `agent.brainLevel` — `off` / `normal` / `high` / `genius`, lihat [Brain Level](#brain-level)
 - `systemPromptFile` — file prompt sistem, default `system.md`
 
+## Konfigurasi
+
+Setiap kali aplikasi dimulai, `config.json` akan divalidasi secara ketat menggunakan **Zod**. Jika ada field dengan tipe atau format yang salah (misalnya `baseUrl` bukan URL valid, `httpPort` bukan angka positif), CodeClaw akan menolak untuk berjalan dan menampilkan pesan error yang spesifik. Periksa pesan error, perbaiki field yang dilaporkan, lalu jalankan ulang. Anda juga bisa mengisi/mengedit konfigurasi lewat `node cli.js panel`.
+
 File yang tidak ikut ke git: `config.json`, `data.db`, `knowledge.db`, `skills/`, `.branches/`, `downloads/`.
 
 ---
