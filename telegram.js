@@ -10,6 +10,7 @@ import { memorySection, retrieveExperiences, reflectExperience, saveExperience }
 import { distillSkill, improveSkill, autoImproveFailingSkills, isComplexTask } from "./lib/skill-distiller.js";
 import { loadConfig, migrateIfNeeded } from "./lib/config.js";
 import { getBrainPrompt } from "./lib/brain.js";
+import { planTask, critiqueResult, fixResult, shouldCritique } from "./lib/cognitive.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, "config.json");
@@ -216,10 +217,18 @@ async function processMessage(chatId, userInput, from) {
     } catch { /* silent */ }
   };
 
+  // 🧠 COGNITIVE PRE-PASS: Planner (hanya high/genius)
+  const brainLevel = CONFIG.agent.brainLevel || "normal";
+  let cognitivePlan = "";
+  if (brainLevel === "high" || brainLevel === "genius") {
+    cognitivePlan = await planTask(llm, userInput, log);
+  }
+
   for (let iter = 0; iter < CONFIG.agent.maxToolIterations; iter++) {
     const history = session.history(chatId, CONFIG.agent.contextWindow);
     const pastExp = retrieveExperiences(userInput);
-    const messages = [{ role: "system", content: buildSystem(chatId) + pastExp }, ...history];
+    const planBlock = cognitivePlan ? "\n\n## RENCANA YANG SUDAH DIBUAT:\n" + cognitivePlan + "\n\nIkuti rencana ini." : "";
+    const messages = [{ role: "system", content: buildSystem(chatId) + pastExp + planBlock }, ...history];
     lastMessages = messages;
 
     let responseText = "";
@@ -303,6 +312,20 @@ async function processMessage(chatId, userInput, from) {
       return;
     }
 
+    // 🧠 COGNITIVE POST-PASS: Critic + Fixer (hanya high/genius)
+    if ((brainLevel === "high" || brainLevel === "genius") && responseText.trim()) {
+      try {
+        const critique = await critiqueResult(llm, userInput, responseText, log);
+        if (shouldCritique(critique)) {
+          responseText = await fixResult(llm, userInput, responseText, critique, log);
+        } else {
+          log("🧠 [Otak] Critic: OK, tidak perlu perbaikan");
+        }
+      } catch (e) {
+        log("🧠 [Otak] Post-pass gagal: " + e.message);
+      }
+    }
+    
     if (responseText.trim()) await sendText(chatId, responseText);
     else await tg.sendMessage(chatId, "(no response)").catch(() => {});
     reflectExperience(llm, userInput, lastMessages).then(ins => saveExperience(userInput, ins, true)).catch(() => {});
