@@ -37,7 +37,8 @@ Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, mac
 CodeClaw kini dilengkapi dengan mesin analisa kuantitatif dan fundamental otomatis:
 
 - **XAU/USD (Gold) Analysis**: Menarik data harga dari Twelve Data, menghitung RSI(14), SMA(20/50), ATR(14) untuk menentukan level SL/TP berbasis volatilitas (SL & TP1 = 1.5×ATR, TP2 = 3×ATR). Membaca berita terkait The Fed (Exa AI), serta mengambil data makro (US10Y, Real Yield DFII10, VIX via FRED API). Level Entry/SL/TP hanya ditampilkan saat sinyal BUY/SELL, sedangkan untuk sinyal WAIT tidak akan ditampilkan. Dikirim via command `/gold` di Telegram (manual, tidak otomatis).
-- **Automated Research**: Cron job berjalan otomatis untuk meriset jurnal ArXiv dan Hacker News, menyimpannya ke Knowledge Base.
+- **Autonomous Learning**: Setiap 6 jam bot meriset topik AI secara mandiri via web search, mengekstrak insight, dan menyimpannya ke memory (`memory.jsonl`). Max 4×/hari. Manual: `/learn`.
+- **Academic Research (manual)**: Untuk paper ArXiv + Hacker News, jalankan `node cli.js cron run` atau `node scripts/cron-research.mjs`.
 - **Production Supervisor**: Menggunakan `run.sh` sebagai supervisor (auto-restart jika crash, heartbeat monitor, anti double-process). Bot dijamin hidup 24/7.
 
 ### Setup Cron & API Keys
