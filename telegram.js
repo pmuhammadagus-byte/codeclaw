@@ -419,22 +419,59 @@ async function handleCommand(chatId, text, from) {
         child.stdout.on("data", d => buf += d.toString());
         child.stderr.on("data", d => buf += d.toString());
         child.on("close", (code) => resolve({ buf, code }));
-        setTimeout(() => { child.kill(); resolve({ buf: buf + "\n[timeout 90s]", code: -1 }); }, 90000);
+        setTimeout(() => { child.kill(); resolve({ buf: buf + "\n[timeout]", code: -1 }); }, 90000);
       });
-      if (output.code !== 0) {
-        await tg.sendMessage(chatId, "❌ Gold analysis gagal:\n" + output.buf.slice(-500)).catch(() => {});
+      // Extract HTML block dari script
+      const m = output.buf.match(/===TG_START===\n([\s\S]*?)\n===TG_END===/);
+      const html = m ? m[1].trim() : "";
+      if (!html) {
+        await tg.sendMessage(chatId, "❌ Gold analysis kosong (exit " + output.code + ")\n" + output.buf.slice(-300)).catch(() => {});
         return true;
       }
-      const MAX = 3800;
-      const text = output.buf.trim();
-      if (text.length <= MAX) {
-        await tg.sendMessage(chatId, text).catch(() => {});
-      } else {
-        for (let i = 0; i < text.length; i += MAX) {
-          await tg.sendMessage(chatId, text.slice(i, i + MAX)).catch(() => {});
-          await new Promise(r => setTimeout(r, 500));
+      // Smart split by paragraph, HTML-safe (tidak motong tag di tengah)
+      function smartSplit(t, maxLen) {
+        if (t.length <= maxLen) return [t];
+        const parts = [];
+        const chunks = t.split(/\n\n+/);
+        let buf = "";
+        for (const c of chunks) {
+          if ((buf + "\n\n" + c).length <= maxLen) {
+            buf = buf ? buf + "\n\n" + c : c;
+          } else {
+            if (buf) parts.push(buf);
+            if (c.length <= maxLen) {
+              buf = c;
+            } else {
+              // Paksa split by sentence
+              const sents = c.split(/(?<=[.!?])\s+/);
+              let sub = "";
+              for (const s of sents) {
+                if ((sub + " " + s).length <= maxLen) sub = sub ? sub + " " + s : s;
+                else { if (sub) parts.push(sub); sub = s; }
+              }
+              buf = sub;
+            }
+          }
+        }
+        if (buf) parts.push(buf);
+        return parts;
+      }
+      const parts = smartSplit(html, 3900);
+      let sent = 0;
+      for (let i = 0; i < parts.length; i++) {
+        try {
+          await tg.sendMessage(chatId, parts[i], { parse_mode: "HTML", disable_web_page_preview: true });
+          sent++;
+          if (i < parts.length - 1) await new Promise(r => setTimeout(r, 500));
+        } catch (e) {
+          log("gold part " + (i+1) + "/" + parts.length + " gagal: " + e.message);
+          try {
+            await tg.sendMessage(chatId, parts[i].replace(/<[^>]+>/g, ""));
+            sent++;
+          } catch (e2) { log("gold fallback " + (i+1) + " gagal: " + e2.message); }
         }
       }
+      log("gold sent " + sent + "/" + parts.length + " parts (HTML)");
       return true;
     }
     case "/clear":
