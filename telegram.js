@@ -408,14 +408,27 @@ async function handleCommand(chatId, text, from) {
       return true;
     }
     case "/gold": {
-      await tg.sendMessage(chatId, "🥇 Analisis XAU/USD...").catch(() => {});
-      try {
-        const { analyzeGold } = await import("./lib/gold.js");
-        const result = await analyzeGold(CONFIG);
-        await tg.sendMessage(chatId, result, { parse_mode: "Markdown" });
-      } catch (e) {
-        log("gold error: " + e.message);
-        await tg.sendMessage(chatId, "❌ " + e.message);
+      await tg.sendMessage(chatId, "🥇 Menganalisis XAU/USD (bisa 30-60 detik)...").catch(() => {});
+      const { spawn } = await import("node:child_process");
+      const output = await new Promise((resolve) => {
+        const child = spawn("node", ["scripts/gold-analysis.mjs"], {
+          cwd: "/root/codeclaw",
+          env: { ...process.env, NODE_NO_WARNINGS: "1" },
+        });
+        let buf = "";
+        child.stdout.on("data", d => buf += d.toString());
+        child.stderr.on("data", d => buf += d.toString());
+        child.on("close", () => resolve(buf));
+        setTimeout(() => { child.kill(); resolve(buf + "\n\n[timeout 90s]"); }, 90000);
+      });
+      const MAX = 3800;
+      if (output.length <= MAX) {
+        await tg.sendMessage(chatId, output).catch(() => {});
+      } else {
+        for (let i = 0; i < output.length; i += MAX) {
+          await tg.sendMessage(chatId, output.slice(i, i + MAX)).catch(() => {});
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
       return true;
     }
