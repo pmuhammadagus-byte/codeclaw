@@ -6,7 +6,7 @@ import { Session } from "./lib/session.js";
 import { TOOL_DEFINITIONS, executeTool } from "./lib/tools.js";
 import { TelegramAPI } from "./lib/telegram-api.js";
 import { todoSection } from "./lib/planner.js";
-import { memorySection } from "./lib/memory.js";
+import { memorySection, retrieveExperiences, reflectExperience, saveExperience } from "./lib/memory.js";
 import { distillSkill, improveSkill, autoImproveFailingSkills, isComplexTask } from "./lib/skill-distiller.js";
 import { loadConfig, migrateIfNeeded } from "./lib/config.js";
 import { getBrainPrompt } from "./lib/brain.js";
@@ -218,7 +218,9 @@ async function processMessage(chatId, userInput, from) {
 
   for (let iter = 0; iter < CONFIG.agent.maxToolIterations; iter++) {
     const history = session.history(chatId, CONFIG.agent.contextWindow);
-    const messages = [{ role: "system", content: buildSystem(chatId) }, ...history];
+    const pastExp = retrieveExperiences(userInput);
+    const messages = [{ role: "system", content: buildSystem(chatId) + pastExp }, ...history];
+    lastMessages = messages;
 
     let responseText = "";
     const typing = setInterval(() => tg.sendChatAction(chatId).catch(() => {}), 4500);
@@ -303,9 +305,11 @@ async function processMessage(chatId, userInput, from) {
 
     if (responseText.trim()) await sendText(chatId, responseText);
     else await tg.sendMessage(chatId, "(no response)").catch(() => {});
+    reflectExperience(llm, userInput, lastMessages).then(ins => saveExperience(userInput, ins, true)).catch(() => {});
     return;
   }
   await sendText(chatId, "⚠️ Max iterations. Persempit task atau pecah jadi beberapa prompt.");
+  reflectExperience(llm, userInput, lastMessages).then(ins => saveExperience(userInput, ins, false)).catch(() => {});
 }
 
 async function handleCommand(chatId, text, from) {

@@ -35,3 +35,4 @@ supervisor.pid
 supervisor.lock
 .supervisor.lock
 *.swp
+memory.jsonl
