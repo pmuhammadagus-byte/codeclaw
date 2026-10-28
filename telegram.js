@@ -475,6 +475,105 @@ async function handleCommand(chatId, text, from) {
       log("gold sent " + sent + "/" + parts.length + " parts (HTML)");
       return true;
     }
+    case "/health": {
+      const os = await import("node:os");
+      const fsm = await import("node:fs");
+      const freeMB = Math.round(os.freemem() / 1048576);
+      const totalMB = Math.round(os.totalmem() / 1048576);
+      let diskFree = "?";
+      try {
+        const st = fsm.statfsSync("/");
+        diskFree = Math.round((st.bsize * st.bavail) / 1073741824) + " GB";
+      } catch (e) { diskFree = "err"; }
+      let swapMB = 0;
+      try {
+        const mi = fsm.readFileSync("/proc/meminfo", "utf8");
+        const m = mi.match(/SwapTotal:\s+(\d+)/);
+        if (m) swapMB = Math.round(parseInt(m[1]) / 1024);
+      } catch (e) {}
+      let r9 = "err", tmux = "?";
+      try {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 3000);
+        const res = await fetch("http://127.0.0.1:20128/v1/models", { signal: ctl.signal });
+        clearTimeout(t);
+        r9 = String(res.status);
+      } catch (e) { r9 = "down"; }
+      try {
+        const { execSync } = await import("node:child_process");
+        execSync("tmux has-session -t 9router 2>/dev/null", { stdio: "ignore", timeout: 2000 });
+        tmux = "up";
+      } catch (e) { tmux = "down"; }
+      const upSec = Math.floor(process.uptime());
+      const hh = Math.floor(upSec / 3600);
+      const mm = Math.floor((upSec % 3600) / 60);
+      const ramIcon = freeMB > 200 ? "🟢" : freeMB > 100 ? "🟡" : "🔴";
+      const lines = [
+        "🏥 CodeClaw Health",
+        "",
+        "🟢 Bot: alive (" + hh + "h " + mm + "m)",
+        ramIcon + " RAM: " + freeMB + " / " + totalMB + " MB",
+        "🟢 Disk: " + diskFree + " free",
+        (r9 === "200" ? "🟢" : "🔴") + " 9router: HTTP " + r9,
+        (tmux === "up" ? "🟢" : "🔴") + " tmux: " + tmux,
+        (swapMB > 0 ? "🟢" : "🟡") + " Swap: " + swapMB + " MB",
+        "🟢 LLM: " + (CONFIG.llm?.modelRef || "?"),
+      ];
+      await sendText(chatId, lines.join("\n"));
+      return true;
+    }
+    case "/9router": {
+      const { execSync } = await import("node:child_process");
+      const sub = (text.split(/\s+/)[1] || "status").toLowerCase();
+      if (sub === "restart") {
+        await sendText(chatId, "🔄 Restart 9router...");
+        try { execSync("tmux kill-session -t 9router 2>/dev/null", { stdio: "ignore", timeout: 3000 }); } catch (e) {}
+        await new Promise(r => setTimeout(r, 2000));
+        try { execSync("tmux new-session -d -s 9router '/usr/bin/9router -l --no-browser --port 20128'", { stdio: "ignore", timeout: 5000 }); } catch (e) {}
+        await new Promise(r => setTimeout(r, 4000));
+      }
+      let http = "err", tmux = "?";
+      try {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 3000);
+        const res = await fetch("http://127.0.0.1:20128/v1/models", { signal: ctl.signal });
+        clearTimeout(t);
+        http = String(res.status);
+      } catch (e) { http = "down"; }
+      try {
+        execSync("tmux has-session -t 9router 2>/dev/null", { stdio: "ignore", timeout: 2000 });
+        tmux = "up";
+      } catch (e) { tmux = "down"; }
+      const ok = http === "200";
+      await sendText(chatId, (ok ? "🟢" : "🔴") + " 9router\n\nHTTP: " + http + "\ntmux: " + tmux + (ok ? "" : "\n\nGunakan /9router restart"));
+      return true;
+    }
+    case "/brain": {
+      const lvl = (text.split(/\s+/)[1] || "").toLowerCase();
+      const valid = ["off", "normal", "high", "genius"];
+      if (!lvl) {
+        await sendText(chatId, "🧠 Brain Level\n\nAktif: " + (CONFIG.agent?.brainLevel || "normal") + "\n\nPilihan: " + valid.join(" / "));
+        return true;
+      }
+      if (!valid.includes(lvl)) {
+        await sendText(chatId, "❌ Tidak valid. Pilih: " + valid.join(" / "));
+        return true;
+      }
+      CONFIG.agent = CONFIG.agent || {};
+      CONFIG.agent.brainLevel = lvl;
+      try {
+        const fsm = await import("node:fs");
+        const raw = JSON.parse(fsm.readFileSync("/root/codeclaw/config.json", "utf8"));
+        raw.agent = raw.agent || {};
+        raw.agent.brainLevel = lvl;
+        fsm.writeFileSync("/root/codeclaw/config.json", JSON.stringify(raw, null, 2));
+        const note = lvl === "genius" ? "4 LLM call, lambat" : lvl === "high" ? "2 LLM call" : lvl === "normal" ? "1 LLM call" : "tanpa cognitive";
+        await sendText(chatId, "✅ Brain → " + lvl + "\n" + note);
+      } catch (e) {
+        await sendText(chatId, "⚠️ Memory set " + lvl + "\n❌ Save gagal: " + e.message);
+      }
+      return true;
+    }
     case "/clear":
       session.clear(chatId); session.todoClear(chatId);
       await tg.sendMessage(chatId, "✅ Cleared");
