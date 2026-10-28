@@ -364,7 +364,7 @@ async function handleCommand(chatId, text, from) {
         `• Code indexer (RAG)\n` +
         `• Todo planning\n\n` +
         `*Model aktif:* \`${CONFIG.llm.modelRef}\`\n\n` +
-        `*Commands:* /gold /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
+        `*Commands:* /gold /goldplan /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
         `Langsung ketik permintaan untuk mulai.`);
       return true;
     case "/memory":
@@ -691,6 +691,89 @@ async function handleCommand(chatId, text, from) {
       setTimeout(() => process.exit(0), 3000);
       return true;
     }
+    case "/goldplan": {
+      await sendText(chatId, "⏳ Mengumpulkan data XAU/USD (harga, makro, berita)...");
+      try {
+        const { spawn } = await import("node:child_process");
+        const rawData = await new Promise((resolve) => {
+          const child = spawn("node", ["scripts/gold-analysis.mjs", "--no-telegram"], { cwd: "/root/codeclaw" });
+          let buf = "";
+          child.stdout.on("data", d => buf += d.toString());
+          child.stderr.on("data", d => buf += d.toString());
+          child.on("close", () => resolve(buf));
+          setTimeout(() => { child.kill(); resolve(buf + "\n[timeout]"); }, 60000);
+        });
+
+        await sendText(chatId, "🧠 Menyusun analisis dengan standar Senior Analyst...");
+        
+        const { GOLDPLAN_PROMPT } = await import("./lib/goldplan-prompt.js");
+        
+        const userPrompt = "Berikut adalah data mentah terkini XAU/USD, Makro, dan Berita dari sistem:\n" +
+          "=== DATA MENTAH ===\n" + rawData + "\n=== END DATA ===\n\n" +
+          "Gunakan data di atas untuk mengisi bagian INPUT. Jika ada data yang kurang, tulis 'data tidak tersedia'.\n" +
+          "Eksekusi METODOLOGI dan hasilkan laporan sesuai FORMAT OUTPUT FINAL.\n\n" +
+          GOLDPLAN_PROMPT;
+
+        const res = await llm.chat({
+          messages: [
+            { role: "system", content: "Anda adalah analis trading senior XAU/USD. Jawab dalam Bahasa Indonesia. Patuhi aturan keras dan FORMAT KHUSUS TELEGRAM." },
+            { role: "user", content: userPrompt }
+          ]
+        });
+        
+        let md = (res.message.content || "Gagal menghasilkan analisis.").trim();
+
+        // Konversi markdown sederhana ke HTML
+        const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        let html = esc(md)
+          .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+          .replace(/(?<!\w)_([^_\n]+?)_(?!\w)/g, "<i>$1</i>")
+          .replace(/^#{1,6}\s+(.+)$/gm, "<b>$1</b>");
+
+        // Smart split: by paragraph (\n\n), fallback by line
+        function smartSplit(t, maxLen) {
+          if (t.length <= maxLen) return [t];
+          const parts = [];
+          const chunks = t.split(/\n\n+/);
+          let buf = "";
+          for (const c of chunks) {
+            if ((buf + "\n\n" + c).length <= maxLen) {
+              buf = buf ? buf + "\n\n" + c : c;
+            } else {
+              if (buf) parts.push(buf);
+              if (c.length <= maxLen) buf = c;
+              else {
+                const lines = c.split(/\n/);
+                let sub = "";
+                for (const ln of lines) {
+                  if ((sub + "\n" + ln).length <= maxLen) sub = sub ? sub + "\n" + ln : ln;
+                  else { if (sub) parts.push(sub); sub = ln; }
+                }
+                buf = sub;
+              }
+            }
+          }
+          if (buf) parts.push(buf);
+          return parts;
+        }
+
+        const parts = smartSplit(html, 3900);
+        for (let i = 0; i < parts.length; i++) {
+          try {
+            await tg.sendMessage(chatId, parts[i], { parse_mode: "HTML", disable_web_page_preview: true });
+          } catch (e) {
+            log("goldplan part " + (i+1) + " error: " + e.message);
+            try {
+              await tg.sendMessage(chatId, parts[i].replace(/<[^>]+>/g, ""));
+            } catch (e2) { log("goldplan fallback error: " + e2.message); }
+          }
+          if (i < parts.length - 1) await new Promise(r => setTimeout(r, 500));
+        }
+      } catch (e) {
+        await sendText(chatId, "❌ Gagal: " + e.message);
+      }
+      return true;
+    }
     case "/clear":
       session.clear(chatId); session.todoClear(chatId);
       await tg.sendMessage(chatId, "✅ Cleared");
@@ -725,7 +808,7 @@ async function handleCommand(chatId, text, from) {
       return true;
     case "/help":
       await sendText(chatId,
-        `*Commands:*\n/start /gold /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
+        `*Commands:*\n/start /gold /goldplan /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
         `*Contoh prompt:*\n` +
         `• "clone repo X, baca README, ringkas 5 poin"\n` +
         `• "buat website portfolio di ~/portfolio"\n` +
