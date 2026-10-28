@@ -574,6 +574,123 @@ async function handleCommand(chatId, text, from) {
       }
       return true;
     }
+    case "/doctor": {
+      const os = await import("node:os");
+      const fsm = await import("node:fs");
+      const results = [];
+      const check = (name, status, detail) => results.push({ name, status, detail: String(detail) });
+
+      check("Node.js", "ok", process.version);
+
+      const cfgPath = "/root/codeclaw/config.json";
+      if (fsm.existsSync(cfgPath)) {
+        const st = fsm.statSync(cfgPath);
+        check("Config file", "ok", Math.round(st.size / 1024) + " KB");
+        try {
+          const raw = JSON.parse(fsm.readFileSync(cfgPath, "utf8"));
+          check("Config parse", "ok", "valid JSON");
+          try {
+            const { validateConfig } = await import("./lib/config-schema.js");
+            validateConfig(raw);
+            check("Config schema", "ok", "Zod valid");
+          } catch (e) {
+            check("Config schema", "fail", String(e.message).slice(0, 60));
+          }
+        } catch (e) {
+          check("Config parse", "fail", String(e.message).slice(0, 60));
+        }
+      } else {
+        check("Config file", "fail", "missing");
+      }
+
+      try {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 3000);
+        const res = await fetch("http://127.0.0.1:20128/v1/models", { signal: ctl.signal });
+        clearTimeout(t);
+        check("9router", res.status === 200 ? "ok" : "warn", "HTTP " + res.status);
+      } catch (e) {
+        check("9router", "fail", "unreachable");
+      }
+
+      const ppid = process.ppid;
+      check("Supervisor", (ppid && ppid !== 1) ? "ok" : "warn", "ppid " + ppid);
+
+      const freeMB = Math.round(os.freemem() / 1048576);
+      check("RAM", freeMB > 200 ? "ok" : freeMB > 100 ? "warn" : "fail", freeMB + " MB free");
+
+      try {
+        const st = fsm.statfsSync("/");
+        const freeGB = Math.round((st.bsize * st.bavail) / 1073741824);
+        check("Disk", freeGB > 5 ? "ok" : "warn", freeGB + " GB free");
+      } catch (e) {
+        check("Disk", "fail", "statfs error");
+      }
+
+      let swapMB = 0;
+      try {
+        const mi = fsm.readFileSync("/proc/meminfo", "utf8");
+        const m = mi.match(/SwapTotal:\s+(\d+)/);
+        if (m) swapMB = Math.round(parseInt(m[1]) / 1024);
+      } catch (e) {}
+      check("Swap", swapMB > 0 ? "ok" : "warn", swapMB + " MB");
+
+      try {
+        const memPath = "/root/codeclaw/memory.jsonl";
+        if (fsm.existsSync(memPath)) {
+          const st = fsm.statSync(memPath);
+          const cnt = fsm.readFileSync(memPath, "utf8").split("\n").filter(Boolean).length;
+          check("Memory", "ok", Math.round(st.size / 1024) + " KB, " + cnt + " entries");
+        } else {
+          check("Memory", "warn", "no memory.jsonl yet");
+        }
+      } catch (e) {
+        check("Memory", "fail", String(e.message).slice(0, 40));
+      }
+
+      try {
+        const lsPath = "/root/codeclaw/.learning-state.json";
+        if (fsm.existsSync(lsPath)) {
+          const st = JSON.parse(fsm.readFileSync(lsPath, "utf8"));
+          if (st.lastRun) {
+            const agoH = Math.round((Date.now() - st.lastRun) / 3600000);
+            const cnt = st.todayCount || 0;
+            check("Learning", agoH < 24 ? "ok" : "warn", "last " + agoH + "h ago, " + cnt + "/4 today");
+          }
+        }
+      } catch (e) {}
+
+      const icons = { ok: "✅", warn: "⚠️", fail: "❌" };
+      const lines = ["🩺 CodeClaw Doctor", ""];
+      let okC = 0, warnC = 0, failC = 0;
+      for (const r of results) {
+        if (r.status === "ok") okC++;
+        else if (r.status === "warn") warnC++;
+        else failC++;
+        lines.push(icons[r.status] + " " + r.name + ": " + r.detail);
+      }
+      lines.push("");
+      lines.push("Total: " + results.length + " check (" + okC + " ok, " + warnC + " warn, " + failC + " fail)");
+      if (failC > 0) lines.push("⚠️ Ada yang gagal — cek detail di atas.");
+      await sendText(chatId, lines.join("\n"));
+      return true;
+    }
+    case "/restart": {
+      await sendText(chatId, "🔄 Restart dalam 2 detik...\nSupervisor akan start ulang otomatis.");
+      try {
+        const { spawn } = await import("node:child_process");
+        spawn("bash", ["-c", "sleep 2 && cd /root/codeclaw && ./run.sh stop && sleep 1 && ./run.sh start"], {
+          detached: true,
+          stdio: "ignore",
+          cwd: "/root/codeclaw"
+        }).unref();
+      } catch (e) {
+        await sendText(chatId, "❌ Restart gagal: " + e.message);
+        return true;
+      }
+      setTimeout(() => process.exit(0), 3000);
+      return true;
+    }
     case "/clear":
       session.clear(chatId); session.todoClear(chatId);
       await tg.sendMessage(chatId, "✅ Cleared");
