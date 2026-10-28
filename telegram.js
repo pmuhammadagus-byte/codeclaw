@@ -9,6 +9,7 @@ import { todoSection } from "./lib/planner.js";
 import { memorySection, retrieveExperiences, reflectExperience, saveExperience } from "./lib/memory.js";
 import { distillSkill, improveSkill, autoImproveFailingSkills, isComplexTask } from "./lib/skill-distiller.js";
 import { loadConfig, migrateIfNeeded } from "./lib/config.js";
+import { TOOL_USE_RULES } from "./lib/tool-use-rules.js";
 import { getBrainPrompt } from "./lib/brain.js";
 import { shouldChunk, saveMission, buildMissionPrompt } from "./lib/long-task.js";
 import { runDailyLearning, readRecentLearning } from "./lib/autonomous-learning.js";
@@ -197,7 +198,7 @@ async function sendText(chatId, text) {
 
 function buildSystem(chatId) {
   const brainLevel = CONFIG.agent.brainLevel || CONFIG.agent.brain || "normal";
-  return BASE_SYSTEM + getBrainPrompt(brainLevel) + todoSection(session, chatId) + memorySection(session, chatId);
+  return BASE_SYSTEM + getBrainPrompt(brainLevel) + TOOL_USE_RULES + todoSection(session, chatId) + memorySection(session, chatId);
 }
 
 async function processMessage(chatId, userInput, from) {
