@@ -9,6 +9,7 @@ import { todoSection } from "./lib/planner.js";
 import { memorySection, retrieveExperiences, reflectExperience, saveExperience } from "./lib/memory.js";
 import { distillSkill, improveSkill, autoImproveFailingSkills, isComplexTask } from "./lib/skill-distiller.js";
 import { loadConfig, migrateIfNeeded } from "./lib/config.js";
+import { CONFIG_FILE, DATA_DIR, MEMORY_FILE, LEARNING_STATE } from "./lib/paths.js";
 import { TOOL_USE_RULES } from "./lib/tool-use-rules.js";
 import { getBrainPrompt } from "./lib/brain.js";
 import { shouldChunk, saveMission, buildMissionPrompt } from "./lib/long-task.js";
@@ -480,7 +481,7 @@ async function handleCommand(chatId, text, from) {
         let twelveDataKey = "";
         try {
           const fsMod = await import("node:fs");
-          const rawCfg = JSON.parse(fsMod.default.readFileSync("/root/codeclaw/config.json", "utf8"));
+          const rawCfg = JSON.parse(fsMod.default.readFileSync(CONFIG_FILE, "utf8"));
           twelveDataKey = rawCfg.twelvedata?.apiKey || "";
         } catch (e) {
           console.log("[trade] failed read config:", e.message);
@@ -551,7 +552,7 @@ async function handleCommand(chatId, text, from) {
       const { spawn } = await import("node:child_process");
       const output = await new Promise((resolve) => {
         const child = spawn("node", ["scripts/gold-analysis.mjs", "--no-telegram"], {
-          cwd: "/root/codeclaw",
+          cwd: __dirname,
           env: { ...process.env, NODE_NO_WARNINGS: "1" },
         });
         let buf = "";
@@ -701,10 +702,10 @@ async function handleCommand(chatId, text, from) {
       CONFIG.agent.brainLevel = lvl;
       try {
         const fsm = await import("node:fs");
-        const raw = JSON.parse(fsm.readFileSync("/root/codeclaw/config.json", "utf8"));
+        const raw = JSON.parse(fsm.readFileSync(CONFIG_FILE, "utf8"));
         raw.agent = raw.agent || {};
         raw.agent.brainLevel = lvl;
-        fsm.writeFileSync("/root/codeclaw/config.json", JSON.stringify(raw, null, 2));
+        fsm.writeFileSync(CONFIG_FILE, JSON.stringify(raw, null, 2));
         const note = lvl === "genius" ? "4 LLM call, lambat" : lvl === "high" ? "2 LLM call" : lvl === "normal" ? "1 LLM call" : "tanpa cognitive";
         await sendText(chatId, "✅ Brain → " + lvl + "\n" + note);
       } catch (e) {
@@ -720,7 +721,7 @@ async function handleCommand(chatId, text, from) {
 
       check("Node.js", "ok", process.version);
 
-      const cfgPath = "/root/codeclaw/config.json";
+      const cfgPath = CONFIG_FILE;
       if (fsm.existsSync(cfgPath)) {
         const st = fsm.statSync(cfgPath);
         check("Config file", "ok", Math.round(st.size / 1024) + " KB");
@@ -774,7 +775,7 @@ async function handleCommand(chatId, text, from) {
       check("Swap", swapMB > 0 ? "ok" : "warn", swapMB + " MB");
 
       try {
-        const memPath = "/root/codeclaw/memory.jsonl";
+        const memPath = MEMORY_FILE;
         if (fsm.existsSync(memPath)) {
           const st = fsm.statSync(memPath);
           const cnt = fsm.readFileSync(memPath, "utf8").split("\n").filter(Boolean).length;
@@ -787,7 +788,7 @@ async function handleCommand(chatId, text, from) {
       }
 
       try {
-        const lsPath = "/root/codeclaw/.learning-state.json";
+        const lsPath = LEARNING_STATE;
         if (fsm.existsSync(lsPath)) {
           const st = JSON.parse(fsm.readFileSync(lsPath, "utf8"));
           if (st.lastRun) {
@@ -817,10 +818,10 @@ async function handleCommand(chatId, text, from) {
       await sendText(chatId, "🔄 Restart dalam 2 detik...\nSupervisor akan start ulang otomatis.");
       try {
         const { spawn } = await import("node:child_process");
-        spawn("bash", ["-c", "sleep 2 && cd /root/codeclaw && ./run.sh stop && sleep 1 && ./run.sh start"], {
+        spawn("bash", ["-c", `sleep 2 && cd "${__dirname}" && ./run.sh stop && sleep 1 && ./run.sh start`], {
           detached: true,
           stdio: "ignore",
-          cwd: "/root/codeclaw"
+          cwd: __dirname
         }).unref();
       } catch (e) {
         await sendText(chatId, "❌ Restart gagal: " + e.message);
@@ -834,7 +835,7 @@ async function handleCommand(chatId, text, from) {
       try {
         const { spawn } = await import("node:child_process");
         const rawData = await new Promise((resolve) => {
-          const child = spawn("node", ["scripts/gold-analysis.mjs", "--no-telegram"], { cwd: "/root/codeclaw" });
+          const child = spawn("node", ["scripts/gold-analysis.mjs", "--no-telegram"], { cwd: __dirname });
           let buf = "";
           child.stdout.on("data", d => buf += d.toString());
           child.stderr.on("data", d => buf += d.toString());
