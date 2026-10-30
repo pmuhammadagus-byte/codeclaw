@@ -15,6 +15,14 @@ import { shouldChunk, saveMission, buildMissionPrompt } from "./lib/long-task.js
 import { runDailyLearning, readRecentLearning } from "./lib/autonomous-learning.js";
 import { planTask, critiqueResult, fixResult, shouldCritique } from "./lib/cognitive.js";
 
+// Escape HTML entity untuk Telegram (default parse_mode: HTML di lib/telegram-api.js)
+function __escTg(t) {
+  return String(t == null ? "" : t)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, "config.json");
 function loadFileIfExists(name) {
@@ -364,7 +372,7 @@ async function handleCommand(chatId, text, from) {
         `• Code indexer (RAG)\n` +
         `• Todo planning\n\n` +
         `*Model aktif:* \`${CONFIG.llm.modelRef}\`\n\n` +
-        `*Commands:* /gold /goldplan /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
+        `*Commands:* /gold /goldplan /memory /learn /learned /clear /todo /mem /status /whoami /skills /help\n\n` +
         `Langsung ketik permintaan untuk mulai.`);
       return true;
     case "/memory":
@@ -389,9 +397,61 @@ async function handleCommand(chatId, text, from) {
       try {
         const res = await runDailyLearning(llm, msg => log(msg), { force: true });
         const n = res.results?.length || 0;
-        await tg.sendMessage(chatId, `✅ Selesai. ${n} insight baru dipelajari. Cek /learned`);
+
+        let saved = 0, skipped = 0, failed = 0;
+        const savedNames = [];
+        if (n > 0) {
+          const { SkillStore: SKL } = await import("./lib/skills.js");
+          const store = new SKL();
+          for (const r of res.results) {
+            const topic = String(r.topic || "").trim();
+            const insight = String(r.insight || "").trim();
+            if (!topic || !insight || insight.length < 15) { skipped++; continue; }
+
+            // Skip kalau topik sudah ada skill serupa
+            const existing = store.find(topic, 3);
+            const dup = existing.some(s => {
+              const hay = ((s.name || "") + " " + (s.trigger || "")).toLowerCase();
+              const key = topic.toLowerCase().slice(0, 25);
+              return key.length > 5 && hay.includes(key);
+            });
+            if (dup) { skipped++; continue; }
+
+            try {
+              const tagWords = (topic + " " + insight).toLowerCase()
+                .replace(/[^a-z0-9\s]/g, " ")
+                .split(/\s+/)
+                .filter(w => w.length > 4 && w.length < 20);
+              const tags = [...new Set(tagWords)].slice(0, 6);
+
+              store.save({
+                name: "riset: " + topic.slice(0, 60),
+                trigger: topic + " || " + insight.slice(0, 120),
+                procedure: "## Insight\n\n" + insight + "\n\n## Sumber\n\nDari autonomous learning (topic: " + topic + ").",
+                tags,
+                examples: []
+              });
+              saved++;
+              savedNames.push(topic.slice(0, 40));
+            } catch (e) {
+              failed++;
+              log("Skill save failed: " + e.message);
+            }
+          }
+        }
+
+        let reply = "✅ Riset selesai.\n\n";
+        reply += "📚 Insight baru: " + n + "\n";
+        reply += "✨ Skill tersimpan: " + saved + "\n";
+        if (skipped > 0) reply += "⏭ Dilewati (duplikat/kosong): " + skipped + "\n";
+        if (failed > 0) reply += "❌ Gagal simpan: " + failed + "\n";
+        if (savedNames.length > 0) {
+          reply += "\n*Skill baru:*\n" + savedNames.map(x => "• riset: " + x).join("\n");
+        }
+        reply += "\n\nCek /skills untuk lihat semua skill";
+        await tg.sendMessage(chatId, __escTg(reply), { parse_mode: "HTML", disable_web_page_preview: true });
       } catch (e) {
-        await tg.sendMessage(chatId, "❌ Learning gagal: " + e.message);
+        await tg.sendMessage(chatId, __escTg("❌ Learning gagal: " + e.message), { parse_mode: "HTML" });
       }
       return true;
     }
@@ -806,6 +866,60 @@ async function handleCommand(chatId, text, from) {
         `Lock bot: tambahkan \`${from.id}\` ke allowlist:\n` +
         `\`node cli.js channel telegram allow ${from.id}\``);
       return true;
+    case "/skills": {
+      const { SkillStore: SK } = await import("./lib/skills.js");
+      const store = new SK();
+      const skills = store.list();
+      const stats = store.stats();
+      let txt = "📚 Skills: " + skills.length + "\n\n";
+      txt += "Uses: " + stats.totalUses + " | OK: " + stats.totalSuccesses + " | Fail: " + stats.totalFailures + "\n\n";
+      if (!skills.length) {
+        txt += "Belum ada skill.";
+      } else {
+        const list = skills.slice(0, 25);
+        for (const s of list) {
+          const rate = s.uses ? Math.round(100 * s.successes / s.uses) + "%" : "unused";
+          txt += "• " + s.id + " — " + (s.name || "") + " (" + rate + ")\n";
+        }
+        if (skills.length > 25) txt += "\n...dan " + (skills.length - 25) + " lainnya";
+        txt += "\n\n Usage: /skill [id] | /skill search [q]";
+      }
+      await tg.sendMessage(chatId, __escTg(txt));
+      return true;
+    }
+    case "/skill": {
+      const { SkillStore: SK2 } = await import("./lib/skills.js");
+      const store = new SK2();
+      const parts = text.slice(7).trim().split(/\s+/);
+      const sub = parts[0] || "";
+      if (sub === "search") {
+        const q = parts.slice(1).join(" ");
+        if (!q) { await tg.sendMessage(chatId, "Usage: /skill search [query]"); return true; }
+        const results = store.find(q, 10);
+        let msg = "🔍 " + results.length + " skill cocok dengan \"" + q + "\":\n\n";
+        if (!results.length) msg = "❌ Tidak ada cocok dengan \"" + q + "\"";
+        else for (const s of results) msg += "• " + s.id + " — " + (s.name || "") + "\n";
+        await tg.sendMessage(chatId, __escTg(msg));
+        return true;
+      }
+      if (sub === "delete" || sub === "rm") {
+        const id = parts[1];
+        if (!id) { await tg.sendMessage(chatId, "Usage: /skill delete [id]"); return true; }
+        const ok = store.delete(id);
+        await tg.sendMessage(chatId, ok ? "✅ Skill " + id + " dihapus" : "❌ Skill " + id + " tidak ada");
+        return true;
+      }
+      if (!sub) {
+        await tg.sendMessage(chatId, " Usage: /skill [id] | /skill search [q] | /skill delete [id]");
+        return true;
+      }
+      const content = store.read(sub);
+      if (!content) { await tg.sendMessage(chatId, "❌ Skill " + sub + " tidak ditemukan"); return true; }
+      const safeContent = content.length > 4000 ? content.slice(0, 3800) + "\n\n(dipotong)" : content;
+      await tg.sendMessage(chatId, __escTg(safeContent));
+      return true;
+    }
+
     case "/help":
       await sendText(chatId,
         `*Commands:*\n/start /gold /goldplan /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
