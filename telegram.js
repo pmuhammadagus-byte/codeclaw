@@ -368,11 +368,15 @@ async function handleCommand(chatId, text, from) {
         `Saya coding agent canggih:\n` +
         `• Buat/edit file\n` +
         `• Git, gh CLI (GitHub)\n` +
-        `• Web search + fetch\n` +
-        `• Code indexer (RAG)\n` +
-        `• Todo planning\n\n` +
+        `• Web search + fetch, RAG\n` +
+        `• Todo planning\n` +
+        `• 📊 Trade signal XAU/USD\n` +
+        `• 🔬 Research methods (agent/trading/tools)\n` +
+        `• 📚 Skill system (auto-learn, auto-save)\n\n` +
         `*Model aktif:* \`${CONFIG.llm.modelRef}\`\n\n` +
-        `*Commands:* /gold /goldplan /memory /learn /learned /clear /todo /mem /status /whoami /skills /help\n\n` +
+        `*Coding:* /skills /skill /memory /learn /learned /todo /mem /status /whoami /clear /help
+*Trading:* /trade /gold /goldplan
+*Research:* /research-methods\n\n` +
         `Langsung ketik permintaan untuk mulai.`);
       return true;
     case "/memory":
