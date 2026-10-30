@@ -866,6 +866,101 @@ async function handleCommand(chatId, text, from) {
         `Lock bot: tambahkan \`${from.id}\` ke allowlist:\n` +
         `\`node cli.js channel telegram allow ${from.id}\``);
       return true;
+
+    case "/research-methods": {
+      try {
+        const { runMethodsResearch, readMethodsState, writeMethodsState, readRecentResearch, computeMethodsStats } = await import("./lib/methods-research.js");
+        const args = text.slice(19).trim().split(/\s+/);
+        const sub = args[0] || "";
+
+        if (sub === "auto") {
+          const toggle = args[1] || "";
+          const state = readMethodsState();
+          if (toggle === "on") {
+            state.autoEnabled = true;
+            writeMethodsState(state);
+            await tg.sendMessage(chatId, __escTg("✅ Auto-research ON.\nSetiap hari 03:00 WIB riset 3 topik (agent, trading, tools) + auto-save skill."), { parse_mode: "HTML" });
+          } else if (toggle === "off") {
+            state.autoEnabled = false;
+            writeMethodsState(state);
+            await tg.sendMessage(chatId, __escTg("⛔ Auto-research OFF."), { parse_mode: "HTML" });
+          } else {
+            const st = state.autoEnabled ? "ON" : "OFF";
+            const last = state.lastAutoRun ? new Date(state.lastAutoRun).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }) : "belum pernah";
+            await tg.sendMessage(chatId, __escTg("Auto-research: " + st + "\nLast run: " + last + "\nUsage: /research-methods auto on|off"), { parse_mode: "HTML" });
+          }
+          return true;
+        }
+
+        if (sub === "list") {
+          const recents = readRecentResearch(5);
+          if (!recents.length) {
+            await tg.sendMessage(chatId, __escTg("📭 Belum ada riwayat riset."), { parse_mode: "HTML" });
+            return true;
+          }
+          let msg = "📜 5 Riset Terakhir:\n\n";
+          for (const r of recents) {
+            const d = new Date(r.ts).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
+            msg += d + "\n  Saved: " + r.saved + " | Skip: " + r.skipped + " | Fail: " + r.failed + "\n";
+            if (r.results?.length) r.results.forEach(x => msg += "    • [" + x.category + "] " + x.method + "\n");
+            msg += "\n";
+          }
+          await tg.sendMessage(chatId, __escTg(msg), { parse_mode: "HTML", disable_web_page_preview: true });
+          return true;
+        }
+
+        if (sub === "stats") {
+          const s = computeMethodsStats();
+          let msg = "📊 Research Stats\n\n";
+          msg += "Total runs: " + s.totalRuns + "\n";
+          msg += "Saved: " + s.total.saved + "\n";
+          msg += "Skipped: " + s.total.skipped + "\n";
+          msg += "Failed: " + s.total.failed + "\n\n";
+          msg += "Per kategori:\n";
+          msg += "• 🤖 AI Agent: " + s.byCategory.agent + "\n";
+          msg += "• 📈 Trading: " + s.byCategory.trading + "\n";
+          msg += "• 🔧 Tools: " + s.byCategory.tools + "\n";
+          await tg.sendMessage(chatId, __escTg(msg), { parse_mode: "HTML" });
+          return true;
+        }
+
+        const cats = [];
+        if (sub === "agent" || sub === "trading" || sub === "tools") cats.push(sub);
+        else cats.push("agent", "trading", "tools");
+
+        await tg.sendMessage(chatId, "🔬 Riset metode terbaru... (2-4 menit)\nKategori: " + cats.join(", ")).catch(() => {});
+
+        const result = await runMethodsResearch(llm, msg => log(msg), { force: true, categories: cats });
+
+        if (result.skipped) {
+          await tg.sendMessage(chatId, __escTg("⏭ Skip: " + (result.reason || "limit")), { parse_mode: "HTML" });
+          return true;
+        }
+        if (result.error) {
+          await tg.sendMessage(chatId, __escTg("❌ Error: " + (result.message || result.error)), { parse_mode: "HTML" });
+          return true;
+        }
+
+        let reply = "✅ Riset selesai.\n\n";
+        reply += "📚 Topik diriset: " + result.totalTopics + "\n";
+        reply += "✨ Skill tersimpan: " + result.savedCount + "\n";
+        if (result.skippedCount > 0) reply += "⏭ Dilewati: " + result.skippedCount + "\n";
+        if (result.failedCount > 0) reply += "❌ Gagal: " + result.failedCount + "\n";
+        reply += "\n*Skill baru:*\n";
+        for (const cat of ["agent", "trading", "tools"]) {
+          if (result.byCategory[cat]?.length) {
+            reply += "\n" + cat.toUpperCase() + ":\n";
+            result.byCategory[cat].forEach(m => reply += "  • " + m + "\n");
+          }
+        }
+        reply += "\nCek /skills untuk semua";
+        await tg.sendMessage(chatId, __escTg(reply), { parse_mode: "HTML", disable_web_page_preview: true });
+      } catch (e) {
+        await tg.sendMessage(chatId, __escTg("❌ Research error: " + e.message), { parse_mode: "HTML" });
+      }
+      return true;
+    }
+
     case "/skills": {
       const { SkillStore: SK } = await import("./lib/skills.js");
       const store = new SK();
