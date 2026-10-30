@@ -43,3 +43,20 @@ learning-log.jsonl
 hitung-gaji/
 weather-app/
 weather-report/
+
+# Trade & research state
+.trade-state.json
+.methods-research-state.json
+trade-log.jsonl
+methods-research-log.jsonl
+
+# All backups
+*.bak
+*.bak-*
+*.bak.*
+lib/*.bak-*
+bin/*.bak-*
+
+# Old scripts (superseded by .mjs)
+bin/trade-auto.sh
+bin/research-auto.sh

@@ -472,6 +472,80 @@ async function handleCommand(chatId, text, from) {
       await tg.sendMessage(chatId, text, { parse_mode: "Markdown" }).catch(() => {});
       return true;
     }
+    case "/trade": {
+      try {
+        const { runTradeAnalysis, readRecentTrades, computeTradeStats, readTradeState, writeTradeState } = await import("./lib/trade-analyzer.js");
+        const args = text.slice(7).trim().split(/\s+/);
+        const sub = args[0] || "";
+        let twelveDataKey = "";
+        try {
+          const fsMod = await import("node:fs");
+          const rawCfg = JSON.parse(fsMod.default.readFileSync("/root/codeclaw/config.json", "utf8"));
+          twelveDataKey = rawCfg.twelvedata?.apiKey || "";
+        } catch (e) {
+          console.log("[trade] failed read config:", e.message);
+        }
+        if (!twelveDataKey) {
+          try {
+            if (CONFIG.raw?.twelvedata?.apiKey) twelveDataKey = CONFIG.raw.twelvedata.apiKey;
+            else if (CONFIG.twelvedata?.apiKey) twelveDataKey = CONFIG.twelvedata.apiKey;
+          } catch {}
+        }
+
+        if (sub === "auto") {
+          const toggle = args[1] || "";
+          const state = readTradeState();
+          if (toggle === "on") {
+            state.autoEnabled = true;
+            writeTradeState(state);
+            await tg.sendMessage(chatId, __escTg("✅ Auto-trade ON. Setiap hari 09:00 WIB auto analisa XAU/USD."), { parse_mode: "HTML" });
+          } else if (toggle === "off") {
+            state.autoEnabled = false;
+            writeTradeState(state);
+            await tg.sendMessage(chatId, __escTg("⛔ Auto-trade OFF."), { parse_mode: "HTML" });
+          } else {
+            const st = state.autoEnabled ? "ON" : "OFF";
+            const last = state.lastAutoRun ? new Date(state.lastAutoRun).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }) : "belum pernah";
+            await tg.sendMessage(chatId, __escTg("Auto-trade: " + st + "\nLast run: " + last + "\nUsage: /trade auto on|off"), { parse_mode: "HTML" });
+          }
+          return true;
+        }
+
+        if (sub === "list") {
+          const trades = readRecentTrades(10);
+          if (!trades.length) {
+            await tg.sendMessage(chatId, __escTg("📭 Belum ada riwayat trade."), { parse_mode: "HTML" });
+            return true;
+          }
+          let msg = "📜 10 Trade Terakhir:\n\n";
+          for (const t of trades) {
+            const d = new Date(t.ts).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
+            msg += d + " | " + (t.entry || "-") + " @ " + (t.entry_price || "-") + " | Conf: " + (t.confidence || "-") + "\n";
+          }
+          await tg.sendMessage(chatId, __escTg(msg), { parse_mode: "HTML", disable_web_page_preview: true });
+          return true;
+        }
+
+        if (sub === "stats") {
+          const s = computeTradeStats();
+          let msg = "📊 Trade Stats\n\nTotal: " + s.total + "\nBUY: " + s.byEntry.BUY + "\nSELL: " + s.byEntry.SELL + "\nWAIT: " + s.byEntry.WAIT + "\n";
+          await tg.sendMessage(chatId, __escTg(msg), { parse_mode: "HTML" });
+          return true;
+        }
+
+        await tg.sendMessage(chatId, "📊 Analisa XAU/USD... (30-60 detik)").catch(() => {});
+        const manualPrice = parseFloat(sub) || null;
+        const result = await runTradeAnalysis({ llm, price: manualPrice, twelveDataKey });
+        await tg.sendMessage(chatId, __escTg(result.formatted), { parse_mode: "HTML", disable_web_page_preview: true });
+        if (result.skillSaved) {
+          await tg.sendMessage(chatId, __escTg("💾 Signal disimpan sebagai skill. Cek /skills"), { parse_mode: "HTML" });
+        }
+      } catch (e) {
+        await tg.sendMessage(chatId, __escTg("❌ Trade error: " + e.message), { parse_mode: "HTML" });
+      }
+      return true;
+    }
+
     case "/gold": {
       await tg.sendMessage(chatId, "🥇 Menganalisis XAU/USD (30-60 detik)...").catch(() => {});
       const { spawn } = await import("node:child_process");
