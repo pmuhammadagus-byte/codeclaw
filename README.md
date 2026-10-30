@@ -167,21 +167,97 @@ Aktifkan auto di Telegram:
 ## 🏗️ Arsitektur
 
 ```
-┌──────────────┐
-│  Telegram    │
+┌──────────────┐         ┌──────────────┐
+│  (user HP)   │         │  9router     │
+└──────┬───────┘         │  (LLM)       │
+       │                └──────┬───────┘
+       ▼                       │
+┌──────────────┐               │
+│ codeclaw tg  │───────────────┘
+│ (agent bot)  │
 └──────┬───────┘
        │
-┌──────┴───────┐
-│  CodeClaw    │
-│  Agent Core  │
-└──────┬───────┘
+       ├──► tools (file, git, web, shell)
        │
-┌──────┴───────┐
-│  Skill Store │
-│  (SQLite)    │
-└──────────────┘
+       ├──► SkillStore (auto-learn)
+       │
+       ├──► TwelveData (XAU/USD OHLC)
+       │
+       └──► Supabase (user data, optional)
 ```
 
-## 📄 Lisensi
+## 📁 Struktur Data
 
-MIT
+### Config (read-only)
+
+- `~/.config/codeclaw/config.json` — main config
+- `~/.config/codeclaw/.env` — secrets (optional)
+
+### Data (runtime)
+
+- `~/.local/share/codeclaw/skills/` — semua skill (.md)
+- `~/.local/share/codeclaw/logs/` — log files
+- `~/.local/share/codeclaw/memory.jsonl` — memory pelajaran
+- `~/.local/share/codeclaw/trade-log.jsonl` — riwayat trade
+- `~/.local/share/codeclaw/methods-research-log.jsonl` — riwayat riset
+
+### Legacy Mode
+
+Kalau `~/codeclaw/config.json` (atau `/root/codeclaw/config.json`) ada, otomatis pakai lokasi itu — kompatibel dengan setup lama.
+
+## 🔒 Security
+
+CodeClaw punya 4 layer proteksi default:
+
+| Layer | Fungsi |
+|---|---|
+| P0-1a | Block FORBIDDEN commands (rm -rf, sudo, mkfs, dll) |
+| P0-1b | Allowlist commands (ls, cat, git, node, dll) |
+| P0-1d | Secret protection — block sk-*, ghp_*, Bearer * di output |
+| P0-2 | Path sandbox — hanya akses folder diizinkan |
+
+Override untuk debug (tidak direkomendasikan di production):
+
+```bash
+export CODECLAW_UNSAFE=1
+codeclaw tui
+```
+
+## 🔧 Environment Variables (Opsional)
+
+Tambahkan di `~/.config/codeclaw/.env`:
+
+```env
+TWELVEDATA_API_KEY=...     # untuk auto-fetch XAU/USD
+VERCEL_TOKEN=...            # deploy Vercel
+GH_TOKEN=...                # GitHub CLI
+SUPABASE_ACCESS_TOKEN=...   # query database
+```
+
+## 🐛 Troubleshooting
+
+| Error | Solusi |
+|---|---|
+| EACCES saat install | `sudo npm install -g @cakagus/codeclaw` |
+| config not found | `codeclaw help` → ikuti instruksi |
+| Bot tidak respond | `pm2 logs codeclaw-tg --lines 50` |
+| 409 Conflict | Hanya boleh 1 instance: `pm2 delete codeclaw-tg && pm2 start codeclaw --name codeclaw-tg -- tg` |
+| better-sqlite3 error | `npm rebuild better-sqlite3` |
+| EOTP publish | Pakai Granular Access Token + "Bypass 2FA" |
+
+## 📄 License
+
+MIT — lihat [LICENSE](LICENSE)
+
+## 🙏 Credits
+
+Built with:
+
+- 9router — LLM router
+- TwelveData — market data
+- grammY-style Telegram API — bot framework
+- Node.js 22+
+
+---
+
+Made with 🦞 by @cakagus
