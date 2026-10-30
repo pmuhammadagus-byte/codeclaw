@@ -1,7 +1,19 @@
+# Secrets & config
 .env
+.env.*
 config.json
+*.pem
+*.key
+
+# Backups (semua format)
 *.bak
 *.bak.*
+*.bak-*
+**/*.bak*
+**/*.bak.*
+**/*.bak-*
+
+# Data & runtime
 node_modules/
 skills/
 .agents/
@@ -12,9 +24,20 @@ trade-log.jsonl
 methods-research-log.jsonl
 .trade-state.json
 .methods-research-state.json
+.learning-state.json
 *.log
+*.pid
+
+# Dev/test
 .git/
 .github/
 e2e/
 tests/
 test/
+*.test.js
+scripts/gen-badges.mjs
+
+# Misc
+.DS_Store
+.vercel
+.vscode

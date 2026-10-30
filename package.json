@@ -28,9 +28,15 @@
     "codeclaw": "bin/codeclaw.js"
   },
   "files": [
-    "bin/",
-    "lib/",
-    "scripts/",
+    "bin/codeclaw.js",
+    "bin/codeclaw-unsafe",
+    "bin/skill-manager.js",
+    "bin/trade-auto.mjs",
+    "bin/research-auto.mjs",
+    "bin/tokenobral-deploy.sh",
+    "lib/*.js",
+    "lib/*.mjs",
+    "scripts/*.mjs",
     "index.js",
     "telegram.js",
     "cli.js",

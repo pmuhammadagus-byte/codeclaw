@@ -1,6 +1,7 @@
 #!/bin/bash
 # Wrapper: jalankan CodeClaw dengan full access (P0-1 & P0-2 unblocked)
-# ⚠️ PERINGATAN: Tidak ada validasi path/command. Gunakan hanya untuk debug.
+# ⚠️ Gunakan hanya untuk debug/development
 export CODECLAW_UNSAFE=1
-cd /root/codeclaw
-exec node index.js "$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PKG_ROOT="$(dirname "$SCRIPT_DIR")"
+exec node "$PKG_ROOT/index.js" "$@"
