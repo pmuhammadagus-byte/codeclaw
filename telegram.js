@@ -25,7 +25,8 @@ function __escTg(t) {
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_PATH = path.join(__dirname, "config.json");
+// CONFIG_PATH dari paths.js (handle legacy + user config dir)
+const CONFIG_PATH = CONFIG_FILE;
 function loadFileIfExists(name) {
   const p = path.join(__dirname, name);
   return fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "";
