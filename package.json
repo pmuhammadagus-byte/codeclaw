@@ -1,6 +1,6 @@
 {
   "name": "codeclaw-pro",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -23,5 +23,20 @@
     "ai": "^7.0.157",
     "node-cron": "^4.6.0",
     "zod": "^4.6.7"
-  }
+  },
+  "bin": {
+    "codeclaw": "bin/codeclaw.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "scripts/",
+    "index.js",
+    "telegram.js",
+    "cli.js",
+    "panel.js",
+    "config.example.json",
+    "README.md",
+    "LICENSE"
+  ]
 }

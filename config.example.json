@@ -1,94 +1,39 @@
 {
-  "gateway": {
-    "mode": "local",
-    "httpPort": 3000
-  },
+  "gateway": { "mode": "local", "httpPort": 3000 },
   "models": {
     "mode": "merge",
-    "default": "bandelbanget/glm-5.3",
+    "default": "9router/Combo",
     "providers": {
-      "bandelbanget": {
-        "baseUrl": "https://bandelbanget.xyz/v1",
-        "apiKey": "sk-...",
+      "9router": {
+        "baseUrl": "http://127.0.0.1:20128/v1",
+        "apiKey": "REPLACE_WITH_9ROUTER_KEY",
         "api": "openai-completions",
         "models": [
-          {
-            "id": "glm-5.3",
-            "name": "GLM 5.3",
-            "maxTokens": 8192,
-            "temperature": 0.2
-          }
-        ]
-      },
-      "groq": {
-        "baseUrl": "https://api.groq.com/openai/v1",
-        "apiKey": "gsk_...",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "llama-3.3-70b-versatile",
-            "name": "Llama 3.3 70B"
-          },
-          {
-            "id": "llama-3.1-8b-instant",
-            "name": "Llama 3.1 8B (fast)"
-          }
-        ]
-      },
-      "gemini": {
-        "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
-        "apiKey": "AIza...",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "gemini-2.0-flash-exp",
-            "name": "Gemini 2.0 Flash"
-          }
+          { "id": "Combo", "name": "Combo (Recommended)" },
+          { "id": "glm-5.3", "name": "GLM 5.3" }
         ]
       }
     }
   },
   "agents": {
-    "main": {
-      "default": true,
-      "model": "bandelbanget/glm-5.3",
-      "systemPromptFile": "system.md"
-    }
+    "main": { "default": true, "model": "9router/Combo", "systemPromptFile": "system.md" }
   },
   "channels": {
     "telegram": {
-      "enabled": false,
+      "enabled": true,
       "accounts": {
         "default": {
-          "botToken": "",
-          "allowedUserIds": [],
-          "pollTimeout": 30,
+          "botToken": "REPLACE_WITH_BOTFATHER_TOKEN",
+          "allowedUserIds": [123456789],
           "chatId": "123456789"
         }
       }
     }
   },
   "agent": {
-    "maxToolIterations": 30,
-    "contextWindow": 80,
+    "maxToolIterations": 100,
+    "contextWindow": 200,
     "approvalMode": "dangerous-only",
-    "maxSubagentDepth": 2,
-    "maxSubagentIterations": 15,
-    "brainLevel": "high"
-  },
-  "research": {
-    "enabled": false,
-    "topics": [
-      "AI agents",
-      "coding assistants",
-      "LLM tool use"
-    ],
-    "sources": [
-      "arxiv",
-      "hn"
-    ]
-  },
-  "twelvedata": {
-    "apiKey": "YOUR_TWELVE_DATA_API_KEY"
+    "brainLevel": "smart"
   }
 }
