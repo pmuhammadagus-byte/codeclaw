@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import('/root/codeclaw/lib/skills.js').then(async (mod) => {
+import('../lib/skills.js').then(async (mod) => {
   const { SkillStore, buildSkillSection } = mod;
   const store = new SkillStore();
   const cmd = process.argv[2];

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import fs from "node:fs";
-import { loadConfig } from "/root/codeclaw/lib/config.js";
-import { LLM } from "/root/codeclaw/lib/llm.js";
-import { runTradeAnalysis, readTradeState, writeTradeState } from "/root/codeclaw/lib/trade-analyzer.js";
-import { TelegramAPI } from "/root/codeclaw/lib/telegram-api.js";
+import { loadConfig } from "../lib/config.js";
+import { LLM } from "../lib/llm.js";
+import { runTradeAnalysis, readTradeState, writeTradeState } from "../lib/trade-analyzer.js";
+import { TelegramAPI } from "../lib/telegram-api.js";
+import { CONFIG_FILE, ensureDirs } from "../lib/paths.js";
 
 async function main() {
   console.log("[trade-auto] start", new Date().toISOString());
@@ -14,7 +15,8 @@ async function main() {
     process.exit(0);
   }
 
-  const CFG = loadConfig("/root/codeclaw/config.json");
+  ensureDirs();
+  const CFG = loadConfig(CONFIG_FILE);
   console.log("[trade-auto] llm:", { model: CFG.llm?.model, baseUrl: CFG.llm?.baseUrl?.slice(0, 40) });
 
   if (!CFG.llm?.apiKey) {
@@ -25,7 +27,7 @@ async function main() {
   // Read twelvedata.apiKey from raw config.json
   let twelveDataKey = "";
   try {
-    const rawCfg = JSON.parse(fs.readFileSync("/root/codeclaw/config.json", "utf8"));
+    const rawCfg = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
     twelveDataKey = rawCfg.twelvedata?.apiKey || "";
   } catch {}
 

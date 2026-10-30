@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { loadConfig } from "/root/codeclaw/lib/config.js";
-import { LLM } from "/root/codeclaw/lib/llm.js";
-import { runMethodsResearch, readMethodsState } from "/root/codeclaw/lib/methods-research.js";
-import { TelegramAPI } from "/root/codeclaw/lib/telegram-api.js";
+import { loadConfig } from "../lib/config.js";
+import { LLM } from "../lib/llm.js";
+import { runMethodsResearch, readMethodsState } from "../lib/methods-research.js";
+import { TelegramAPI } from "../lib/telegram-api.js";
+import { CONFIG_FILE, ensureDirs } from "../lib/paths.js";
 
 async function main() {
   console.log("[research-auto] start", new Date().toISOString());
@@ -13,7 +14,8 @@ async function main() {
     process.exit(0);
   }
 
-  const CFG = loadConfig("/root/codeclaw/config.json");
+  ensureDirs();
+  const CFG = loadConfig(CONFIG_FILE);
   console.log("[research-auto] llm:", { model: CFG.llm?.model });
 
   if (!CFG.llm?.apiKey) {
