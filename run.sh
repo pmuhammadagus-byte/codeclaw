@@ -13,7 +13,7 @@ _d="${0%/*}"
 [[ $_d == "$0" ]] && _d="."
 cd "$_d" || exit 1
 
-APP="${CODECLAW_APP:-telegram.js}"
+APP="${CODECLAW_APP:-bin/codeclaw.js}"
 LOG="${CODECLAW_LOG:-telegram.log}"
 SUP_LOG="supervisor.log"
 PID_FILE="${CODECLAW_PID:-telegram.pid}"
