@@ -1,0 +1,6 @@
+#!/bin/bash
+# Wrapper: jalankan CodeClaw dengan full access (P0-1 & P0-2 unblocked)
+# ⚠️ PERINGATAN: Tidak ada validasi path/command. Gunakan hanya untuk debug.
+export CODECLAW_UNSAFE=1
+cd /root/codeclaw
+exec node index.js "$@"

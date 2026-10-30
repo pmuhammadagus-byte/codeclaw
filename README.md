@@ -6,7 +6,7 @@
 
 <p align="center">
   <img src="assets/badges/node.svg" alt="Node.js 22.5+">
-  <img src="assets/badges/tools.svg" alt="30 tools">
+  <img src="assets/badges/tools.svg" alt="32 tools">
   <img src="assets/badges/tests.svg" alt="42 test lulus">
   <img src="assets/badges/license.svg" alt="Lisensi MIT">
   <img src="assets/badges/deps.svg" alt="0 dependency wajib">
@@ -15,7 +15,7 @@
 
 Coding agent untuk terminal. Jalan di Termux (Android), Ubuntu PRoot, Linux, macOS, dan WSL. Tanpa `npm install` — cukup Node.js 22.5+.
 
-- **30 tools** — file ops, shell, git/gh, web, code indexer, todo, memory, research, skills, brain mode
+- **32 tools** — file ops, shell, git/gh, web, code indexer, todo, memory, research, skills, brain mode
 - **Self-evolving** — agent menyimpan pengalaman sukses jadi skill reusable
 - **Hermes-style memory** — pengalaman masa lalu otomatis di-inject ke prompt; memory.jsonl dikompresi otomatis jika >1 MB (Fase 6)
 - **Knowledge base** — riset ArXiv + Hacker News masuk SQLite, otomatis di-inject ke prompt
@@ -56,7 +56,7 @@ Untuk mengaktifkan fitur analisa Emas, pastikan Anda mengisi API Key berikut di 
 5. [Setup Telegram](#setup-telegram)
 6. [Perintah CLI](#perintah-cli)
 7. [Perintah REPL](#perintah-repl)
-8. [30 Tools](#30-tools)
+8. [32 Tools](#32-tools)
 9. [Brain Level](#brain-level)
 10. [Konfigurasi](#konfigurasi)
 11. [Self-Evolving Skills](#self-evolving-skills)
@@ -283,7 +283,7 @@ Perintah bot Telegram: `/start`, `/clear`, `/todo`, `/mem`, `/status`, `/whoami`
 
 ---
 
-## 30 Tools
+## 32 Tools
 
 **File & kode (7):**
 - `read_file` — baca dengan line numbers
@@ -332,7 +332,16 @@ Perintah bot Telegram: `/start`, `/clear`, `/todo`, `/mem`, `/status`, `/whoami`
 - `think` — reasoning eksplisit sebelum eksekusi
 - `verify` — buktikan hasil dengan command konkret
 
-**Total: 30 tools**
+**Sub-Agent (1):**
+- `spawn_subagent` — delegasi tugas spesifik paralel/terpisah
+
+**Browser (1):**
+- `browser_use` — kontrol browser Lightpanda (navigate, click, fill, extract, eval, screenshot)
+
+**Calendar (1):**
+- `fetch_calendar` — jadwal berita ekonomi high-impact (ForexFactory)
+
+**Total: 32 tools**
 
 ---
 

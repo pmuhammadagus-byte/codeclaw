@@ -16,6 +16,11 @@
     "undici": "^8.12.3"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.92",
+    "@ai-sdk/google": "^4.0.108",
+    "@ai-sdk/openai": "^4.0.105",
+    "@ai-sdk/react": "^4.0.161",
+    "ai": "^7.0.157",
     "zod": "^4.6.7"
   }
 }
