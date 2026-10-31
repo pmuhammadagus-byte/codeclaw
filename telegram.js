@@ -270,7 +270,7 @@ async function processMessage(chatId, userInput, from) {
       log(`llm err: ${e.message}`);
       const detail = String(e.message || "");
       const isNet = /fetch gagal|ECONN|ETIMEDOUT|ENOTFOUND|socket hang up|LLM request gagal/i.test(detail);
-      await sendText(chatId,
+      await tg.sendMessage(chatId,
         isNet
           ? `🌐 *Koneksi ke model gagal*\n\n` +
             `Sudah dicoba otomatis beberapa kali, tetap tidak tembus.\n\n` +
@@ -299,7 +299,7 @@ async function processMessage(chatId, userInput, from) {
       
       if (loopDetected) {
         log(`Loop detected — breaking`);
-        await sendText(chatId, 
+        await tg.sendMessage(chatId, 
           `⚠️ *Loop terdeteksi*\n\n` +
           `Agent stuck memanggil tool yang sama berkali-kali tanpa progress.\n\n` +
           `*Kemungkinan penyebab:*\n` +
@@ -352,12 +352,12 @@ async function processMessage(chatId, userInput, from) {
       }
     }
     
-    if (responseText.trim()) await sendText(chatId, responseText);
+    if (responseText.trim()) await tg.sendMessage(chatId, responseText);
     else await tg.sendMessage(chatId, "(no response)").catch(() => {});
     reflectExperience(llm, userInput, lastMessages).then(ins => saveExperience(userInput, ins, true)).catch(() => {});
     return;
   }
-  await sendText(chatId, "⚠️ Max iterations. Persempit task atau pecah jadi beberapa prompt.");
+  await tg.sendMessage(chatId, "⚠️ Max iterations. Persempit task atau pecah jadi beberapa prompt.");
   reflectExperience(llm, userInput, lastMessages).then(ins => saveExperience(userInput, ins, false)).catch(() => {});
 }
 
@@ -365,7 +365,7 @@ async function handleCommand(chatId, text, from) {
   const cmd = text.split(/\s+/)[0].toLowerCase();
   switch (cmd) {
     case "/start":
-      await sendText(chatId,
+      await tg.sendMessage(chatId,
         `👋 *CodeClaw Pro*\n\n` +
         `Saya coding agent canggih:\n` +
         `• Buat/edit file\n` +
@@ -659,14 +659,14 @@ async function handleCommand(chatId, text, from) {
         (swapMB > 0 ? "🟢" : "🟡") + " Swap: " + swapMB + " MB",
         "🟢 LLM: " + (CONFIG.llm?.modelRef || "?"),
       ];
-      await sendText(chatId, lines.join("\n"));
+      await tg.sendMessage(chatId, lines.join("\n"));
       return true;
     }
     case "/9router": {
       const { execSync } = await import("node:child_process");
       const sub = (text.split(/\s+/)[1] || "status").toLowerCase();
       if (sub === "restart") {
-        await sendText(chatId, "🔄 Restart 9router...");
+        await tg.sendMessage(chatId, "🔄 Restart 9router...");
         try { execSync("tmux kill-session -t 9router 2>/dev/null", { stdio: "ignore", timeout: 3000 }); } catch (e) {}
         await new Promise(r => setTimeout(r, 2000));
         try { execSync("tmux new-session -d -s 9router '/usr/bin/9router -l --no-browser --port 20128'", { stdio: "ignore", timeout: 5000 }); } catch (e) {}
@@ -685,18 +685,18 @@ async function handleCommand(chatId, text, from) {
         tmux = "up";
       } catch (e) { tmux = "down"; }
       const ok = http === "200";
-      await sendText(chatId, (ok ? "🟢" : "🔴") + " 9router\n\nHTTP: " + http + "\ntmux: " + tmux + (ok ? "" : "\n\nGunakan /9router restart"));
+      await tg.sendMessage(chatId, (ok ? "🟢" : "🔴") + " 9router\n\nHTTP: " + http + "\ntmux: " + tmux + (ok ? "" : "\n\nGunakan /9router restart"));
       return true;
     }
     case "/brain": {
       const lvl = (text.split(/\s+/)[1] || "").toLowerCase();
       const valid = ["off", "normal", "high", "genius"];
       if (!lvl) {
-        await sendText(chatId, "🧠 Brain Level\n\nAktif: " + (CONFIG.agent?.brainLevel || "normal") + "\n\nPilihan: " + valid.join(" / "));
+        await tg.sendMessage(chatId, "🧠 Brain Level\n\nAktif: " + (CONFIG.agent?.brainLevel || "normal") + "\n\nPilihan: " + valid.join(" / "));
         return true;
       }
       if (!valid.includes(lvl)) {
-        await sendText(chatId, "❌ Tidak valid. Pilih: " + valid.join(" / "));
+        await tg.sendMessage(chatId, "❌ Tidak valid. Pilih: " + valid.join(" / "));
         return true;
       }
       CONFIG.agent = CONFIG.agent || {};
@@ -708,9 +708,9 @@ async function handleCommand(chatId, text, from) {
         raw.agent.brainLevel = lvl;
         fsm.writeFileSync(CONFIG_FILE, JSON.stringify(raw, null, 2));
         const note = lvl === "genius" ? "4 LLM call, lambat" : lvl === "high" ? "2 LLM call" : lvl === "normal" ? "1 LLM call" : "tanpa cognitive";
-        await sendText(chatId, "✅ Brain → " + lvl + "\n" + note);
+        await tg.sendMessage(chatId, "✅ Brain → " + lvl + "\n" + note);
       } catch (e) {
-        await sendText(chatId, "⚠️ Memory set " + lvl + "\n❌ Save gagal: " + e.message);
+        await tg.sendMessage(chatId, "⚠️ Memory set " + lvl + "\n❌ Save gagal: " + e.message);
       }
       return true;
     }
@@ -812,11 +812,11 @@ async function handleCommand(chatId, text, from) {
       lines.push("");
       lines.push("Total: " + results.length + " check (" + okC + " ok, " + warnC + " warn, " + failC + " fail)");
       if (failC > 0) lines.push("⚠️ Ada yang gagal — cek detail di atas.");
-      await sendText(chatId, lines.join("\n"));
+      await tg.sendMessage(chatId, lines.join("\n"));
       return true;
     }
     case "/restart": {
-      await sendText(chatId, "🔄 Restart dalam 2 detik...\nSupervisor akan start ulang otomatis.");
+      await tg.sendMessage(chatId, "🔄 Restart dalam 2 detik...\nSupervisor akan start ulang otomatis.");
       try {
         const { spawn } = await import("node:child_process");
         spawn("bash", ["-c", `sleep 2 && cd "${__dirname}" && ./run.sh stop && sleep 1 && ./run.sh start`], {
@@ -825,14 +825,14 @@ async function handleCommand(chatId, text, from) {
           cwd: __dirname
         }).unref();
       } catch (e) {
-        await sendText(chatId, "❌ Restart gagal: " + e.message);
+        await tg.sendMessage(chatId, "❌ Restart gagal: " + e.message);
         return true;
       }
       setTimeout(() => process.exit(0), 3000);
       return true;
     }
     case "/goldplan": {
-      await sendText(chatId, "⏳ Mengumpulkan data XAU/USD (harga, makro, berita)...");
+      await tg.sendMessage(chatId, "⏳ Mengumpulkan data XAU/USD (harga, makro, berita)...");
       try {
         const { spawn } = await import("node:child_process");
         const rawData = await new Promise((resolve) => {
@@ -844,7 +844,7 @@ async function handleCommand(chatId, text, from) {
           setTimeout(() => { child.kill(); resolve(buf + "\n[timeout]"); }, 60000);
         });
 
-        await sendText(chatId, "🧠 Menyusun analisis dengan standar Senior Analyst...");
+        await tg.sendMessage(chatId, "🧠 Menyusun analisis dengan standar Senior Analyst...");
         
         const { GOLDPLAN_PROMPT } = await import("./lib/goldplan-prompt.js");
         
@@ -910,7 +910,7 @@ async function handleCommand(chatId, text, from) {
           if (i < parts.length - 1) await new Promise(r => setTimeout(r, 500));
         }
       } catch (e) {
-        await sendText(chatId, "❌ Gagal: " + e.message);
+        await tg.sendMessage(chatId, "❌ Gagal: " + e.message);
       }
       return true;
     }
@@ -921,18 +921,18 @@ async function handleCommand(chatId, text, from) {
     case "/todo": {
       const t = session.todoList(chatId);
       if (!t.length) { await tg.sendMessage(chatId, "(no todos)"); return true; }
-      await sendText(chatId, t.map(x => `[${x.id}] ${x.status} — ${x.task}`).join("\n"));
+      await tg.sendMessage(chatId, t.map(x => `[${x.id}] ${x.status} — ${x.task}`).join("\n"));
       return true;
     }
     case "/mem": {
       const m = session.memList(chatId);
       if (!m.length) { await tg.sendMessage(chatId, "(empty)"); return true; }
-      await sendText(chatId, m.map(x => `${x.key} = ${x.value}`).join("\n"));
+      await tg.sendMessage(chatId, m.map(x => `${x.key} = ${x.value}`).join("\n"));
       return true;
     }
     case "/status": {
       const mem = Math.round(process.memoryUsage().rss / 1024 / 1024);
-      await sendText(chatId,
+      await tg.sendMessage(chatId,
         `*Status*\nModel: \`${CONFIG.llm.modelRef}\`\n` +
         `History: ${session.count(chatId)} msgs\n` +
         `Todos: ${session.todoList(chatId).length}\n` +
@@ -941,7 +941,7 @@ async function handleCommand(chatId, text, from) {
       return true;
     }
     case "/whoami":
-      await sendText(chatId,
+      await tg.sendMessage(chatId,
         `User ID: \`${from.id}\`\nChat ID: \`${chatId}\`\n\n` +
         `Lock bot: tambahkan \`${from.id}\` ke allowlist:\n` +
         `\`node cli.js channel telegram allow ${from.id}\``);
@@ -1047,7 +1047,7 @@ async function handleCommand(chatId, text, from) {
         const { SkillStore } = await import("./lib/skills.js");
         const fsm = await import("node:fs");
         if (!fsm.existsSync(MEMORY_FILE)) {
-          await sendText(chatId, "❌ Memory file tidak ada.");
+          await tg.sendMessage(chatId, "❌ Memory file tidak ada.");
           return true;
         }
         const lines = fsm.readFileSync(MEMORY_FILE, "utf8").split("\n").filter(Boolean);
@@ -1067,9 +1067,9 @@ async function handleCommand(chatId, text, from) {
             saved++;
           } catch { skipped++; }
         }
-        await sendText(chatId, `📚 Import memory → skill\n\n✅ Saved: ${saved}\n⏭ Skipped: ${skipped}\n\nCek /skills`);
+        await tg.sendMessage(chatId, `📚 Import memory → skill\n\n✅ Saved: ${saved}\n⏭ Skipped: ${skipped}\n\nCek /skills`);
       } catch (e) {
-        await sendText(chatId, "❌ Error: " + e.message);
+        await tg.sendMessage(chatId, "❌ Error: " + e.message);
       }
       return true;
     }
@@ -1128,7 +1128,7 @@ async function handleCommand(chatId, text, from) {
     }
 
     case "/help":
-      await sendText(chatId,
+      await tg.sendMessage(chatId,
         `*Commands:*\n/start /gold /goldplan /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
         `*Contoh prompt:*\n` +
         `• "clone repo X, baca README, ringkas 5 poin"\n` +
@@ -1187,9 +1187,9 @@ async function processImage(chatId, text, imagePath, from) {
     const res = await llm.chat({ messages, tools: TOOL_DEFINITIONS, onStream: c => responseText += c });
     session.add(chatId, { role: "user", content: text || "[Gambar]" });
     session.add(chatId, res.message);
-    if (responseText.trim()) await sendText(chatId, responseText);
+    if (responseText.trim()) await tg.sendMessage(chatId, responseText);
     else await tg.sendMessage(chatId, "(no response)").catch(() => {});
-  } catch (e) { await sendText(chatId, `❌ Gagal memproses gambar: ${e.message}`); }
+  } catch (e) { await tg.sendMessage(chatId, `❌ Gagal memproses gambar: ${e.message}`); }
   finally { clearInterval(typing); }
 }
 
@@ -1260,7 +1260,7 @@ async function main() {
           if (file) {
             if (file.error) await tg.sendMessage(chatId, `❌ ${file.error}`);
             else if (text.trim()) await processMessage(chatId, `File: ${file.path}\n\n${text}`, from);
-            else await sendText(chatId, `📎 Saved: \`${file.path}\``);
+            else await tg.sendMessage(chatId, `📎 Saved: \`${file.path}\``);
             continue;
           }
           if (!text) continue;
@@ -1268,7 +1268,7 @@ async function main() {
           await processMessage(chatId, text, from);
         } catch (e) {
           log(`err: ${e.message}`);
-          await sendText(chatId, `❌ ${escapeHtml(e.message)}`).catch(() => {});
+          await tg.sendMessage(chatId, `❌ ${escapeHtml(e.message)}`).catch(() => {});
         }
       }
     } catch (e) {
