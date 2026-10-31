@@ -12,6 +12,8 @@ import { loadConfig, migrateIfNeeded } from "./lib/config.js";
 import { CONFIG_FILE, DATA_DIR, MEMORY_FILE, LEARNING_STATE } from "./lib/paths.js";
 import { TOOL_USE_RULES } from "./lib/tool-use-rules.js";
 import { getBrainPrompt } from "./lib/brain.js";
+import { buildSkillSection } from "./lib/skills.js";
+import { getSkillStore } from "./lib/tools.js";
 import { shouldChunk, saveMission, buildMissionPrompt } from "./lib/long-task.js";
 import { runDailyLearning, readRecentLearning } from "./lib/autonomous-learning.js";
 import { planTask, critiqueResult, fixResult, shouldCritique } from "./lib/cognitive.js";
@@ -206,9 +208,16 @@ async function sendText(chatId, text) {
   }
 }
 
-function buildSystem(chatId) {
+function buildSystem(chatId, userInput = "") {
   const brainLevel = CONFIG.agent.brainLevel || CONFIG.agent.brain || "normal";
-  return BASE_SYSTEM + getBrainPrompt(brainLevel) + TOOL_USE_RULES + todoSection(session, chatId) + memorySection(session, chatId);
+  let skillSection = "";
+  try {
+    if (userInput && String(userInput).trim().length >= 8) {
+      skillSection = buildSkillSection(getSkillStore(), String(userInput));
+    }
+  } catch (e) { console.log("[buildSystem] skillSection fail:", e.message); }
+  const trackerHint = "\n\n## Skill tracking\nJika kamu memakai skill dari skill_find/skill_read, WAJIB panggil skill_record({id, success}) setelah selesai — success=true jika berhasil, false jika gagal. Ini supaya skill yang tidak berguna bisa diperbaiki otomatis.";
+  return BASE_SYSTEM + getBrainPrompt(brainLevel) + TOOL_USE_RULES + todoSection(session, chatId) + memorySection(session, chatId) + skillSection + trackerHint;
 }
 
 async function processMessage(chatId, userInput, from) {
@@ -254,7 +263,7 @@ async function processMessage(chatId, userInput, from) {
     const history = session.history(chatId, CONFIG.agent.contextWindow);
     const pastExp = retrieveExperiences(userInput);
     const planBlock = cognitivePlan ? "\n\n## RENCANA YANG SUDAH DIBUAT:\n" + cognitivePlan + "\n\nIkuti rencana ini." : "";
-    const messages = [{ role: "system", content: buildSystem(chatId) + pastExp + planBlock }, ...history];
+    const messages = [{ role: "system", content: buildSystem(chatId, userInput) + pastExp + planBlock }, ...history];
     lastMessages = messages;
 
     let responseText = "";
@@ -472,11 +481,11 @@ Langsung ketik permintaan untuk mulai.`);
         await tg.sendMessage(chatId, "📚 Belum ada riset tersimpan. Coba /learn dulu.");
         return true;
       }
-      let text = "📚 *5 Riset Terakhir:*\n\n";
+      let text = "📚 <b>5 Riset Terakhir:</b>\n\n";
       recents.forEach((r, i) => {
-        text += `${i+1}. *${r.topic}*\n   ${r.insight}\n\n`;
+        text += `${i+1}. <b>${__escTg(r.topic)}</b>\n   ${__escTg(r.insight)}\n\n`;
       });
-      await tg.sendMessage(chatId, text, { parse_mode: "Markdown" }).catch(() => {});
+      await tg.sendMessage(chatId, text, { parse_mode: "HTML", disable_web_page_preview: true }).catch(() => {});
       return true;
     }
     case "/trade": {
@@ -1207,7 +1216,7 @@ async function processImage(chatId, text, imagePath, from) {
     { type: "text", text: text || "Tolong jelaskan gambar ini." },
     { type: "image_url", image_url: { url: `data:image/jpeg;base64,${b64}` } }
   ];
-  const messages = [ { role: "system", content: buildSystem(chatId) }, { role: "user", content: userContent } ];
+  const messages = [ { role: "system", content: buildSystem(chatId, text) }, { role: "user", content: userContent } ];
   let responseText = "";
   const typing = setInterval(() => tg.sendChatAction(chatId).catch(() => {}), 4500);
   tg.sendChatAction(chatId).catch(() => {});
