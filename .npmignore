@@ -5,7 +5,7 @@ config.json
 *.pem
 *.key
 
-# Backups (semua format)
+# Backups (SEMUA format)
 *.bak
 *.bak.*
 *.bak-*
@@ -35,7 +35,6 @@ e2e/
 tests/
 test/
 *.test.js
-scripts/gen-badges.mjs
 
 # Misc
 .DS_Store
