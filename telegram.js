@@ -392,12 +392,12 @@ Langsung ketik permintaan untuk mulai.`);
         if (mems.length === 0) {
           await tg.sendMessage(chatId, "🧠 Memori masih kosong. Ajak saya mengerjakan tugas!");
         } else {
-          let text = "🧠 *5 Pelajaran Terakhir yang Saya Ingat:*\n\n";
+          let text = "🧠 <b>5 Pelajaran Terakhir yang Saya Ingat:</b>\n\n";
           mems.forEach((m, i) => {
             const d = JSON.parse(m);
-            text += `${i + 1}. _Task:_ ${d.task.slice(0, 40)}...\n   💡 *Insight:* ${d.insight}\n\n`;
+            text += `${i + 1}. <i>Task:</i> ${__escTg(String(d.task || "").slice(0, 40))}...\n   💡 <b>Insight:</b> ${__escTg(d.insight || "")}\n\n`;
           });
-          await tg.sendMessage(chatId, text, { parse_mode: "Markdown" });
+          await tg.sendMessage(chatId, text, { parse_mode: "HTML", disable_web_page_preview: true });
         }
       } catch (e) {
         await tg.sendMessage(chatId, "❌ Gagal membaca memori: " + e.message);
@@ -930,32 +930,55 @@ Langsung ketik permintaan untuk mulai.`);
       return true;
     }
     case "/mem": {
-      const m = session.memList(chatId);
-      if (!m.length) { await tg.sendMessage(chatId, "(empty)"); return true; }
-      await tg.sendMessage(chatId, m.map(x => `${x.key} = ${x.value}`).join("\n"));
+      const all = session.memList(chatId);
+      const m = all.filter(x => !String(x.key || "").startsWith("think_"));
+      const hidden = all.length - m.length;
+      if (!m.length) {
+        await tg.sendMessage(chatId, __escTg("(empty)" + (hidden ? " — " + hidden + " think_* disembunyikan" : "")), { parse_mode: "HTML" });
+        return true;
+      }
+      const core = [], learned = [], other = [];
+      const CORE_PREFIX = ["agent_weaknesses", "honesty_over_claims", "response_style", "identity", "user"];
+      for (const x of m) {
+        const k = String(x.key || "");
+        const raw = String(x.value == null ? "" : x.value);
+        const short = raw.length > 200 ? raw.slice(0, 200) + "…" : raw;
+        const line = "<b>" + __escTg(k) + "</b>\n" + __escTg(short);
+        if (CORE_PREFIX.some(p => k.startsWith(p))) core.push(line);
+        else if (k.startsWith("skill_") || k.startsWith("learned_")) learned.push(line);
+        else other.push(line);
+      }
+      const parts = [];
+      if (core.length) parts.push("📌 <b>Core</b>\n" + core.join("\n\n"));
+      if (learned.length) parts.push("📚 <b>Learned</b>\n" + learned.join("\n\n"));
+      if (other.length) parts.push("🗂 <b>Other</b>\n" + other.join("\n\n"));
+      let out = "🧠 <b>Memory</b>\n\n" + parts.join("\n\n");
+      if (hidden) out += "\n\n<i>(" + hidden + " think_* disembunyikan)</i>";
+      if (out.length > 3800) out = out.slice(0, 3800) + "\n\n<i>… (dipotong)</i>";
+      await tg.sendMessage(chatId, out, { parse_mode: "HTML", disable_web_page_preview: true });
       return true;
     }
     case "/status": {
       const mem = Math.round(process.memoryUsage().rss / 1024 / 1024);
       await tg.sendMessage(chatId,
-        `*Status*\nModel: \`${CONFIG.llm.modelRef}\`\n` +
+        `<b>Status</b>\nModel: <code>${__escTg(CONFIG.llm.modelRef)}</code>\n` +
         `History: ${session.count(chatId)} msgs\n` +
         `Todos: ${session.todoList(chatId).length}\n` +
         `RAM: ${mem} MB\nUptime: ${Math.floor(process.uptime())}s\n` +
-        `PID: \`${process.pid}\``);
+        `PID: <code>${process.pid}</code>`, { parse_mode: "HTML" });
       return true;
     }
     case "/whoami":
       await tg.sendMessage(chatId,
-        `User ID: \`${from.id}\`\nChat ID: \`${chatId}\`\n\n` +
-        `Lock bot: tambahkan \`${from.id}\` ke allowlist:\n` +
-        `\`node cli.js channel telegram allow ${from.id}\``);
+        `User ID: <code>${from.id}</code>\nChat ID: <code>${chatId}</code>\n\n` +
+        `Lock bot: tambahkan <code>${from.id}</code> ke allowlist:\n` +
+        `<code>node cli.js channel telegram allow ${from.id}</code>`, { parse_mode: "HTML" });
       return true;
 
     case "/research_methods": {
       try {
         const { runMethodsResearch, readMethodsState, writeMethodsState, readRecentResearch, computeMethodsStats } = await import("./lib/methods-research.js");
-        const args = text.slice(19).trim().split(/\s+/);
+        const args = text.slice(18).trim().split(/\s+/);
         const sub = args[0] || "";
 
         if (sub === "auto") {
