@@ -376,7 +376,7 @@ async function handleCommand(chatId, text, from) {
         `• 🔬 Research methods (agent/trading/tools)\n` +
         `• 📚 Skill system (auto-learn, auto-save)\n\n` +
         `*Model aktif:* \`${CONFIG.llm.modelRef}\`\n\n` +
-        `*Coding:* /skills /skill /memory /learn /learned /todo /mem /status /whoami /clear /help
+        `*Coding:* /skills /skill /import-memory /memory /learn /learned /todo /mem /status /whoami /clear /help
 *Trading:* /trade /gold /goldplan
 *Research:* /research-methods\n\n` +
         `Langsung ketik permintaan untuk mulai.`);
