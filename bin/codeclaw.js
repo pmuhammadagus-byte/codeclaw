@@ -45,6 +45,12 @@ async function main() {
       await import(path.join(PKG_ROOT, "index.js"));
       break;
     case "skill":
+      // Sub-command: import-memory
+      if (argv[0] === "import-memory") {
+        process.argv = [process.argv[0], "memory-to-skills", ...argv.slice(1)];
+        await import(path.join(PKG_ROOT, "bin", "memory-to-skills.mjs"));
+        break;
+      }
       process.argv = [process.argv[0], "skill-manager", ...argv];
       await import(path.join(PKG_ROOT, "bin", "skill-manager.js"));
       break;

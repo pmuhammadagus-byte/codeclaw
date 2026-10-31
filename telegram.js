@@ -1041,6 +1041,38 @@ async function handleCommand(chatId, text, from) {
       return true;
     }
 
+    case "/import-memory": {
+      try {
+        const { MEMORY_FILE } = await import("./lib/paths.js");
+        const { SkillStore } = await import("./lib/skills.js");
+        const fsm = await import("node:fs");
+        if (!fsm.existsSync(MEMORY_FILE)) {
+          await sendText(chatId, "❌ Memory file tidak ada.");
+          return true;
+        }
+        const lines = fsm.readFileSync(MEMORY_FILE, "utf8").split("\n").filter(Boolean);
+        const store = new SkillStore();
+        let saved = 0, skipped = 0;
+        for (const line of lines) {
+          try {
+            const m = JSON.parse(line);
+            const task = String(m.task || "").trim();
+            const insight = String(m.insight || "").trim();
+            if (!task || !insight || insight.length < 20) { skipped++; continue; }
+            const existing = store.find(task.slice(0, 30), 3);
+            if (existing.some(s => (s.name+s.trigger).toLowerCase().includes(task.toLowerCase().slice(0,25)))) { skipped++; continue; }
+            const tags = [...new Set((task+" "+insight).toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(w=>w.length>4))].slice(0,6);
+            const cleanTask = task.replace(/^\[RISET\]\s*/, "").trim();
+            store.save({ name: (task.startsWith("[RISET]")?"riset: ":"memory: ")+cleanTask.slice(0,55), trigger: cleanTask+" | "+insight.slice(0,100), procedure: "## Insight\n\n"+insight+"\n\n## Sumber\n\nDari memory.", tags, examples: [] });
+            saved++;
+          } catch { skipped++; }
+        }
+        await sendText(chatId, `📚 Import memory → skill\n\n✅ Saved: ${saved}\n⏭ Skipped: ${skipped}\n\nCek /skills`);
+      } catch (e) {
+        await sendText(chatId, "❌ Error: " + e.message);
+      }
+      return true;
+    }
     case "/skills": {
       const { SkillStore: SK } = await import("./lib/skills.js");
       const store = new SK();
