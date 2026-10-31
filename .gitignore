@@ -60,3 +60,5 @@ bin/*.bak-*
 # Old scripts (superseded by .mjs)
 bin/trade-auto.sh
 bin/research-auto.sh
+*.bak-*
+*.bak

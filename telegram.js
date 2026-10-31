@@ -366,20 +366,25 @@ async function handleCommand(chatId, text, from) {
   switch (cmd) {
     case "/start":
       await tg.sendMessage(chatId,
-        `👋 *CodeClaw Pro*\n\n` +
-        `Saya coding agent canggih:\n` +
-        `• Buat/edit file\n` +
-        `• Git, gh CLI (GitHub)\n` +
-        `• Web search + fetch, RAG\n` +
-        `• Todo planning\n` +
-        `• 📊 Trade signal XAU/USD\n` +
-        `• 🔬 Research methods (agent/trading/tools)\n` +
-        `• 📚 Skill system (auto-learn, auto-save)\n\n` +
-        `*Model aktif:* \`${CONFIG.llm.modelRef}\`\n\n` +
-        `*Coding:* /skills /skill /import-memory /memory /learn /learned /todo /mem /status /whoami /clear /help
-*Trading:* /trade /gold /goldplan
-*Research:* /research-methods\n\n` +
-        `Langsung ketik permintaan untuk mulai.`);
+        `👋 <b>CodeClaw Pro</b>
+
+Saya coding agent canggih:
+• Buat/edit file
+• Git, gh CLI (GitHub)
+• Web search + fetch, RAG
+• Todo planning
+• 📊 Trade signal XAU/USD
+• 🔬 Research methods (agent/trading/tools)
+• 📚 Skill system (auto-learn, auto-save)
+
+<b>Model aktif:</b> <code>9router/Combo</code>
+
+<b>Coding:</b> /skills /skill /memory /learn /learned /todo /mem /status /whoami /clear /help
+<b>Memory:</b> /import_memory
+<b>Trading:</b> /trade /gold /goldplan
+<b>Research:</b> /research_methods
+
+Langsung ketik permintaan untuk mulai.`);
       return true;
     case "/memory":
       try {
@@ -947,7 +952,7 @@ async function handleCommand(chatId, text, from) {
         `\`node cli.js channel telegram allow ${from.id}\``);
       return true;
 
-    case "/research-methods": {
+    case "/research_methods": {
       try {
         const { runMethodsResearch, readMethodsState, writeMethodsState, readRecentResearch, computeMethodsStats } = await import("./lib/methods-research.js");
         const args = text.slice(19).trim().split(/\s+/);
@@ -967,7 +972,7 @@ async function handleCommand(chatId, text, from) {
           } else {
             const st = state.autoEnabled ? "ON" : "OFF";
             const last = state.lastAutoRun ? new Date(state.lastAutoRun).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }) : "belum pernah";
-            await tg.sendMessage(chatId, __escTg("Auto-research: " + st + "\nLast run: " + last + "\nUsage: /research-methods auto on|off"), { parse_mode: "HTML" });
+            await tg.sendMessage(chatId, __escTg("Auto-research: " + st + "\nLast run: " + last + "\nUsage: /research_methods auto on|off"), { parse_mode: "HTML" });
           }
           return true;
         }
@@ -1041,7 +1046,7 @@ async function handleCommand(chatId, text, from) {
       return true;
     }
 
-    case "/import-memory": {
+    case "/import_memory": {
       try {
         const { MEMORY_FILE } = await import("./lib/paths.js");
         const { SkillStore } = await import("./lib/skills.js");
