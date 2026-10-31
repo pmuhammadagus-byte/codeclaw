@@ -16,6 +16,15 @@ AI agent terminal + Telegram bot untuk coding, trading, dan research — dengan 
 - ⏰ **Cron scheduler** — trade daily 09:00 WIB, research daily 03:00 WIB
 - 🔒 **Security layer** — path sandbox, command allowlist, secret protection
 
+## 🧠 Fitur Otomatis (tanpa perlu /command)
+
+- 🎯 **Skill injection** — 2 skill paling relevan otomatis di-inject ke context LLM per pesan
+- 📈 **Skill tracking** — setiap skill yang di-inject tercatat `uses`/lastUsed di `skills/_index.json`
+- 🧠 **Cognitive pipeline** (`/brain high` atau `genius`) — Planner → Executor → Critic → Fixer
+- 💾 **Auto-memory** — setiap task (sukses/gagal) di-reflect → disimpan ke `memory.jsonl`
+- ⏰ **Auto-learning** — riset mandiri tiap 6 jam, insight baru disimpan sebagai skill
+
+
 ## 📦 Instalasi
 
 ### NPM (Recommended)
@@ -112,6 +121,7 @@ codeclaw skill delete <id>
 | `/learn` | Riset + auto-save skill baru |
 | `/learned` | 5 riset terakhir |
 | `/memory` | 5 memory terakhir |
+| `/import_memory` | Import memory dari sesi lain |
 | `/clear` | Hapus history |
 | `/todo` | Todo planning |
 | `/status` | Status sistem |
@@ -131,13 +141,13 @@ codeclaw skill delete <id>
 
 | Command | Fungsi |
 |---|---|
-| `/research-methods` | Riset 3 kategori sekaligus |
-| `/research-methods agent` | AI agent methods only |
-| `/research-methods trading` | Trading methods only |
-| `/research-methods tools` | Tools & techniques only |
-| `/research-methods auto on\|off` | Cron daily 03:00 WIB |
-| `/research-methods list` | 5 riset terakhir |
-| `/research-methods stats` | Statistik per kategori |
+| `/research_methods` | Riset 3 kategori sekaligus |
+| `/research_methods agent` | AI agent methods only |
+| `/research_methods trading` | Trading methods only |
+| `/research_methods tools` | Tools & techniques only |
+| `/research_methods auto on\|off` | Cron daily 03:00 WIB |
+| `/research_methods list` | 5 riset terakhir |
+| `/research_methods stats` | Statistik per kategori |
 
 ## ⏰ Cron Setup (Opsional)
 
@@ -161,7 +171,7 @@ Aktifkan auto di Telegram:
 
 ```
 /trade auto on
-/research-methods auto on
+/research_methods auto on
 ```
 
 ## 🏗️ Arsitektur
