@@ -1446,6 +1446,11 @@ Langsung ketik permintaan untuk mulai.`);
     }
 
     case "/import_memory": {
+      // /import_memory DISABLED — menghasilkan noise (123 skill percakapan jadi sampah)
+      // Kalau butuh import manual, pakai script standalone atau minta developer.
+      await tg.sendMessage(chatId, "⛔ /import_memory dinonaktifkan.\n\nAlasan: konversi memory percakapan jadi skill menghasilkan noise (123 noise terakhir = buang-buang token & bikin LLM bingung).\n\nUntuk riset terstruktur, gunakan /learn. Untuk skill manual, pakai /skill atau /skill save.");
+      return true;
+      // eslint-disable-next-line no-unreachable
       try {
         const { MEMORY_FILE } = await import("./lib/paths.js");
         const { SkillStore } = await import("./lib/skills.js");
