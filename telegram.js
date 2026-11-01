@@ -517,6 +517,8 @@ function buildIctPrompt(d) {
 
 function normalizeIctHtml(s) {
   let t = String(s || "");
+  // Convert <br>, <br/>, <br /> ke newline sebelum proses apapun
+  t = t.replace(/<br\s*\/?>/gi, "\n");
   const tags = [];
   t = t.replace(/<\/?(?:b|i|u|s|code|pre|blockquote)(?:\s+[^>]*)?>|<a\s+[^>]*>|<\/a>/gi, (m) => {
     tags.push(m); return `\x00T${tags.length - 1}\x00`;
