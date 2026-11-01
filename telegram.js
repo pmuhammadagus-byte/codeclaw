@@ -365,7 +365,7 @@ async function processMessage(chatId, userInput, from) {
     }
     
     if (responseText.trim()) {
-      const priceTopic = /\b(xau|gold|emas|harga|price|spot|level|entry|tp|sl)\b|\$\s*\d{3,}/i.test(responseText);
+      const priceTopic = /\b(?:xau|gold|emas)\b[^\n]{0,80}\$\s*\d{3,}|\$\s*\d{3,}[^\n]{0,80}\b(?:xau|gold|emas)\b|\b(?:harga|price|spot)\s+(?:xau|gold|emas)\s*[:=]?\s*\$?\d{3,}/i.test(responseText);
       const disclaimer = priceTopic
         ? '⚠️ <i>Jawaban dari model tanpa data live. Untuk harga real: /gold. Jangan pakai angka di atas untuk entry.</i>\n\n'
         : '';
