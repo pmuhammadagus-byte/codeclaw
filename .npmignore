@@ -1,42 +1,27 @@
-# Secrets & config
-.env
-.env.*
-config.json
-*.pem
-*.key
-
-# Backups (SEMUA format)
+# Backup files
 *.bak
 *.bak.*
 *.bak-*
-**/*.bak*
-**/*.bak.*
-**/*.bak-*
 
-# Data & runtime
-node_modules/
-skills/
-.agents/
-logs/
-memory.jsonl
-learning-log.jsonl
-trade-log.jsonl
-methods-research-log.jsonl
-.trade-state.json
-.methods-research-state.json
-.learning-state.json
+# Config & secrets
+config.json
+config.json.*
+.env
+.env.*
+
+# Runtime
 *.log
 *.pid
+cron.log
+watchdog.log
+node_modules/
+.health
+.cron-state.json
+*.cron.backup.*
 
-# Dev/test
+# Dev files
 .git/
 .github/
-e2e/
-tests/
-test/
-*.test.js
-
-# Misc
+.vscode/
+*.swp
 .DS_Store
-.vercel
-.vscode

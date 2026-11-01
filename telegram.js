@@ -2,6 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { LLM } from "./lib/llm.js";
+import { mdToTelegramHtml } from "./lib/md-to-html.js";
+import { analyzeOhlcForIct, formatOhlcForPrompt } from "./lib/ict-ohlc.mjs";
+import { detectPatterns, formatPatternsForPrompt } from "./lib/pattern-detect.mjs";
 import { Session } from "./lib/session.js";
 import { TOOL_DEFINITIONS, executeTool } from "./lib/tools.js";
 import { TelegramAPI } from "./lib/telegram-api.js";
@@ -361,13 +364,254 @@ async function processMessage(chatId, userInput, from) {
       }
     }
     
-    if (responseText.trim()) await tg.sendMessage(chatId, responseText);
+    if (responseText.trim()) {
+      const priceTopic = /\b(xau|gold|emas|harga|price|spot|level|entry|tp|sl)\b|\$\s*\d{3,}/i.test(responseText);
+      const disclaimer = priceTopic
+        ? '⚠️ <i>Jawaban dari model tanpa data live. Untuk harga real: /gold. Jangan pakai angka di atas untuk entry.</i>\n\n'
+        : '';
+      await tg.sendMessage(chatId, disclaimer + mdToTelegramHtml(responseText), { parse_mode: "HTML" });
+    }
     else await tg.sendMessage(chatId, "(no response)").catch(() => {});
     reflectExperience(llm, userInput, lastMessages).then(ins => saveExperience(userInput, ins, true)).catch(() => {});
     return;
   }
   await tg.sendMessage(chatId, "⚠️ Max iterations. Persempit task atau pecah jadi beberapa prompt.");
   reflectExperience(llm, userInput, lastMessages).then(ins => saveExperience(userInput, ins, false)).catch(() => {});
+}
+
+// ===== ICT/SMC ANALYSIS HELPERS =====
+function extractGoldDataFromHtml(html) {
+  const strip = String(html || "").replace(/<[^>]+>/g, " ");
+  const g = (re) => { const m = strip.match(re); return m ? parseFloat(m[1]) : null; };
+  return {
+    price: g(/Harga:\s*([\d.]+)/),
+    rsi: g(/RSI\(14\):\s*([\d.]+)/),
+    sma20: g(/SMA\(20\):\s*([\d.]+)/),
+    sma50: g(/SMA\(50\):\s*([\d.]+)/),
+    rangeLow: g(/Rentang 50h:\s*([\d.]+)/),
+    rangeHigh: g(/Rentang 50h:\s*[\d.]+\s*[-–]\s*([\d.]+)/),
+    adx: g(/ADX\(14\):\s*([\d.]+)/),
+    pp: g(/PP\s+([\d.]+)/),
+    us10y: g(/US10Y:\s*([\d.]+)%/),
+    vix: g(/VIX:\s*([\d.]+)/),
+    atr: g(/ATR\(14\):\s*([\d.]+)/),
+    sl: g(/SL:\s*([\d.]+)/),
+    tp1: g(/TP1:\s*([\d.]+)/),
+    tp2: g(/TP2:\s*([\d.]+)/),
+    recommend: (strip.match(/Rekomendasi:\s*(\w+)/) || [])[1] || "?",
+    score: (strip.match(/Skor\s+(\d+)/) || [])[1] || "?",
+    newsBlock: (strip.match(/Pembacaan langsung terhadap[\s\S]*?(?=📰 BERITA|$)/) || [""])[0].trim(),
+  };
+}
+
+function buildIctPrompt(d) {
+  const f = (v) => v != null ? "$" + v : "[data tidak tersedia]";
+  const mode = d.mode || "analysis";
+
+  const dataBlock = [
+    "DATA REAL (WAJIB pakai, JANGAN ganti):",
+    "- Harga: " + f(d.price),
+    "- RSI(14): " + d.rsi,
+    "- SMA20: " + f(d.sma20) + " | SMA50: " + f(d.sma50),
+    "- Range 50 jam: " + f(d.rangeLow) + " – " + f(d.rangeHigh),
+    "- ADX(14): " + d.adx,
+    "- Pivot Point: " + f(d.pp),
+    "- ATR(14): " + f(d.atr),
+    "- US10Y: " + d.us10y + "%",
+    "- VIX: " + d.vix,
+    "- Level ref algoritma: SL " + f(d.sl) + " | TP1 " + f(d.tp1) + " | TP2 " + f(d.tp2),
+    "- Rekomendasi algoritma: " + d.recommend + " (skor " + d.score + ")",
+    ...(d.ohlc ? [formatOhlcForPrompt(d.ohlc, d.price)] : []),
+    ...(d.patterns ? [formatPatternsForPrompt(d.patterns)] : []),
+    "",
+    "NEWS EXA (ringkasan):",
+    (d.newsBlock ? d.newsBlock.slice(0, 1000) : "[tidak ada]"),
+  ].join("\n");
+
+  const commonRules = [
+    "ATURAN ANGKA KETAT:",
+    "1. WAJIB pakai angka dari DATA di atas. JANGAN sebut $2.xxx, $2.5xx, $2.4xx (harga lama dari training data).",
+    "2. Kalau level tidak tersedia di DATA OHLC, tulis '[perlu chart live]'. JANGAN ngarang.",
+    "3. FORMAT: HTML VALID — <b>bold</b>, <i>italic</i>, <code>x</code>. JANGAN markdown (**, ##, *).",
+    "4. Bahasa Indonesia, ringkas, actionable.",
+  ].join("\n");
+
+  if (mode === "plan") {
+    return [
+      "Kamu trader institusional ICT/SMC. Buat TRADING PLAN actionable dari data di bawah.",
+      "",
+      dataBlock,
+      "",
+      commonRules,
+      "",
+      "=== HARD RULES TRADING (WAJIB DIPATUHI, JANGAN DILANGGAR) ===",
+      "1. SL: minimal 1.5x ATR H1 dari entry, DAN minimal $15 untuk XAU. Jangan pakai SL < $15.",
+      "2. R:R: minimal 1:1.5, MAKSIMAL 1:3. Kalau kalkulasi > 1:3, potong TP supaya pas 1:3.",
+      "3. Entry zone: HANYA zona yang BELUM tertembus harga sekarang. Kalau harga DI LUAR zona (misal di bawah OB bull), itu berarti OB sudah dimitigasi → jadi resistance/support flip, BUKAN entry zone.",
+      "4. TP: TP1 ~1.0-1.5x ATR dari entry, TP2 ~2-2.5x ATR, TP3 (opsional) max 3x ATR. JANGAN skip ke level pivot jauh ($50+).",
+      "5. Kalau tidak ada setup valid (entry tertembus / R:R tidak bisa 1.5-3): tulis 'TIDAK ADA SETUP VALID — WAIT' di section 1, dan untuk section 2-4 tulis '—' (strip).",
+      "6. DXY/US10Y/VIX hanya konteks bias, bukan pengganti level teknikal.",
+      "",
+      "STRUKTUR OUTPUT (WAJIB 6 section, bernomor):",
+      "Buka dengan: 📊 <b>XAU/USD — TRADING PLAN</b> lalu <i>[tanggal] · Harga: $price</i>",
+      "",
+      "<b>1. SETUP SAAT INI</b> (2-3 baris max)",
+      "- Bias arah + alasan singkat dari RSI/SMA/ADX",
+      "- Kalau tidak ada setup: tulis 'TIDAK ADA SETUP VALID — WAIT' di sini",
+      "",
+      "<b>2. ENTRY ZONE</b>",
+      "- Cek: apakah harga sekarang di DALAM atau DI LUAR zona? Kalau di luar → tulis 'OB/FVG $X-$Y sudah tertembus, jadi [resistance/support], bukan entry'",
+      "- Zona entry konkret: $X – $Y (dari FVG/OB yang BELUM tertembus, sebut mana)",
+      "- Jenis: limit / stop / market",
+      "- Trigger: misal 'MSS H1 + close di atas $Z'",
+      "",
+      "<b>3. STOP LOSS</b>",
+      "- SL: $X (dari swing + ATR buffer, sebut mana)",
+      "- Jarak SL: $X = Y.Y x ATR (HARUS >= 1.5x ATR, min $15)",
+      "",
+      "<b>4. TAKE PROFIT</b>",
+      "- TP1: $X (1.0-1.5x ATR dari entry), R:R 1:1.5-2",
+      "- TP2: $X (2-2.5x ATR), R:R 1:2.5-3",
+      "- TP3 (opsional): $X (max 3x ATR)",
+      "- Kalau kalkulasi R:R > 3, potong TP.",
+      "",
+      "<b>5. SKENARIO</b>",
+      "- <b>Bull:</b> jika [trigger] → target $Y",
+      "- <b>Bear:</b> jika [trigger] → target $Y",
+      "- <b>Tidak ada trigger:</b> jika [kondisi] → stay flat",
+      "",
+      "<b>6. RISK & INVALIDASI</b>",
+      "- Lot hint: [X%] risk = [calc dari SL realistis]",
+      "- Max risk: 1-2%",
+      "- Invalidasi: [kondisi batalin plan]",
+      "- Kill zone WIB: London / NY",
+      "",
+      "Tutup: ⚪ <b>Rekomendasi: " + d.recommend + "</b> (skor " + d.score + ") + 1 baris alasan",
+    ].join("\n");
+  }
+
+  // Default: analysis mode
+  return [
+    "Kamu analis trading institusional (ICT/SMC) berpengalaman.",
+    "",
+    dataBlock,
+    "",
+    commonRules,
+    "",
+    "STRUKTUR OUTPUT (WAJIB 6 section, bernomor):",
+    "Buka dengan: 📊 <b>XAU/USD — Analisa ICT/SMC + Pattern</b> lalu <i>[tanggal] · Harga: $price</i>",
+    "",
+    "1. <b>MACRO BIAS (D1/W1)</b>",
+    "2. <b>MARKET STRUCTURE (D1→H4)</b>",
+    "3. <b>LIQUIDITY</b>",
+    "4. <b>KILL ZONE & ENTRY MODEL</b>",
+    "5. <b>RISK & INVALIDASI</b>",
+    "6. <b>CANDLESTICK & PATTERN</b> (WAJIB pakai data dari SECTION 6 DATA di atas)",
+    "   - Kalau pattern detection SKIP (kompresi): tulis 'Pattern detection: SKIP (ATR X < $3, market kompresi). Tunggu ekspansi ATR.'",
+    "   - Kalau ada pattern: sebut pattern terdeteksi + S/R + interpretasi bias (bullish/bearish/neutral) dalam 2-3 baris",
+    "",
+    "Untuk OB/FVG/BSL/SSL yang butuh OHLC — WAJIB pakai level dari DATA OHLC di atas (jangan ngarang).",
+    "Tutup: ⚪ <b>Rekomendasi: " + d.recommend + "</b> (skor " + d.score + ")",
+  ].join("\n");
+}
+
+function normalizeIctHtml(s) {
+  let t = String(s || "");
+  const tags = [];
+  t = t.replace(/<\/?(?:b|i|u|s|code|pre|blockquote)(?:\s+[^>]*)?>|<a\s+[^>]*>|<\/a>/gi, (m) => {
+    tags.push(m); return `\x00T${tags.length - 1}\x00`;
+  });
+  t = t.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+  t = t.replace(/__([^_\n]+)__/g, "<b>$1</b>");
+  t = t.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<i>$2</i>");
+  t = t.replace(/(^|[^_])_([^_\n]+)_(?!_)/g, "$1<i>$2</i>");
+  t = t.replace(/^#{1,6}\s+(.+)$/gm, "<b>$1</b>");
+  t = t.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-f]+;)/gi, "&amp;");
+  t = t.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  t = t.replace(/\x00T(\d+)\x00/g, (_, i) => tags[+i]);
+  return t;
+}
+
+function validateIctOutput(text) {
+  if (!text || text.length < 200) return { ok: false, reason: "terlalu pendek" };
+  // R:R sanity check — tolak kalau ada R:R 1:X dengan X > 5
+  const rrMatches = [...text.matchAll(/R\s*:\s*R\s*1\s*:\s*([\d.]+)/gi)].map(m => parseFloat(m[1]));
+  const badRR = rrMatches.filter(x => x > 5);
+  if (badRR.length) return { ok: false, reason: "R:R tidak realistis: 1:" + badRR.slice(0,2).join(", 1:") };
+
+  const prices = [...text.matchAll(/\$\s*([\d,]+(?:\.\d+)?)/g)].map(m => parseFloat(m[1].replace(/,/g, "")));
+  const bad = prices.filter(p => p >= 2000 && p < 3000);
+  if (bad.length >= 1) return { ok: false, reason: "harga ngawur terdeteksi: " + bad.slice(0,3).join(", ") };
+  return { ok: true };
+}
+
+async function runIctAnalysis(llm, d) {
+  try {
+    let responseText = "";
+    const res = await llm.chat({
+      messages: [
+        { role: "system", content: "Kamu analis ICT/SMC profesional. Patuhi aturan angka ketat. JANGAN sebut harga di bawah $3000 (halusinasi training data)." },
+        { role: "user", content: buildIctPrompt(d) },
+      ],
+      onStream: (c) => { responseText += c; },
+    });
+    return responseText || (typeof res === "string" ? res : (res?.content || res?.text || ""));
+  } catch (e) {
+    log("ict llm err: " + e.message);
+    return null;
+  }
+}
+
+// ===== HOURLY ICT AUTO-ANALYSIS =====
+let HOURLY_ICT_LAST_HOUR = "";
+
+async function runHourlyIctForChat(chatId) {
+  try {
+    await tg.sendMessage(chatId, "🕐 Auto-analisa ICT hourly...").catch(() => {});
+    const { spawn } = await import("node:child_process");
+    const output = await new Promise((resolve) => {
+      const child = spawn("node", ["scripts/gold-analysis.mjs", "--no-telegram"], { cwd: __dirname, env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      let buf = "";
+      child.stdout.on("data", d => buf += d.toString());
+      child.stderr.on("data", d => buf += d.toString());
+      child.on("close", (code) => resolve({ buf, code }));
+      setTimeout(() => { child.kill(); resolve({ buf: buf + "\n[timeout]", code: -1 }); }, 90000);
+    });
+    const m = output.buf.match(/===TG_START===\n([\s\S]*?)\n===TG_END===/);
+    const html = m ? m[1].trim() : "";
+    if (!html) { log("hourly ict: gold-analysis gagal (exit " + output.code + ")"); return false; }
+
+    const goldData = extractGoldDataFromHtml(html);
+    if (!goldData.price) { log("hourly ict: extract gagal"); return false; }
+
+    try {
+      const ohlc = await analyzeOhlcForIct(CONFIG?.twelvedata?.apiKey, "XAU/USD", goldData.price);
+      goldData.ohlc = ohlc;
+    } catch (e) { log("hourly ict: ohlc err " + e.message); }
+
+    const ict = await runIctAnalysis(llm, goldData);
+    if (!ict) { log("hourly ict: LLM null"); return false; }
+    const check = validateIctOutput(ict);
+    if (!check.ok) { log("hourly ict: validation failed: " + check.reason); return false; }
+
+    const normalized = normalizeIctHtml(ict);
+    const parts = normalized.length <= 3900 ? [normalized] : (() => {
+      const ps = []; const chunks = normalized.split(/\n\n+/); let buf = "";
+      for (const c of chunks) {
+        if ((buf + "\n\n" + c).length <= 3900) buf = buf ? buf + "\n\n" + c : c;
+        else { if (buf) ps.push(buf); buf = c.length <= 3900 ? c : c.slice(0, 3900); }
+      }
+      if (buf) ps.push(buf); return ps;
+    })();
+    for (let i = 0; i < parts.length; i++) {
+      try {
+        await tg.sendMessage(chatId, "🕐 <b>[AUTO HOURLY]</b>\n\n" + parts[i], { parse_mode: "HTML", disable_web_page_preview: true });
+      } catch (e) { log("hourly part " + (i+1) + " gagal: " + e.message); }
+      if (i < parts.length - 1) await new Promise(r => setTimeout(r, 500));
+    }
+    log("hourly ict sent to " + chatId + " (" + parts.length + " parts)");
+    return true;
+  } catch (e) { log("hourly ict err: " + e.message); return false; }
 }
 
 async function handleCommand(chatId, text, from) {
@@ -551,10 +795,69 @@ Langsung ketik permintaan untuk mulai.`);
 
         await tg.sendMessage(chatId, "📊 Analisa XAU/USD... (30-60 detik)").catch(() => {});
         const manualPrice = parseFloat(sub) || null;
-        const result = await runTradeAnalysis({ llm, price: manualPrice, twelveDataKey });
-        await tg.sendMessage(chatId, __escTg(result.formatted), { parse_mode: "HTML", disable_web_page_preview: true });
-        if (result.skillSaved) {
-          await tg.sendMessage(chatId, __escTg("💾 Signal disimpan sebagai skill. Cek /skills"), { parse_mode: "HTML" });
+        // ===== ICT/SMC PRIMARY =====
+        let ictSent = false;
+        try {
+          await tg.sendMessage(chatId, "📊 Analisa XAU/USD (ICT/SMC)... (30-60 detik)").catch(() => {});
+          const { spawn } = await import("node:child_process");
+          const output = await new Promise((resolve) => {
+            const child = spawn("node", ["scripts/gold-analysis.mjs", "--no-telegram"], { cwd: __dirname, env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+            let buf = "";
+            child.stdout.on("data", d => buf += d.toString());
+            child.stderr.on("data", d => buf += d.toString());
+            child.on("close", (code) => resolve({ buf, code }));
+            setTimeout(() => { child.kill(); resolve({ buf: buf + "\n[timeout]", code: -1 }); }, 90000);
+          });
+          const m = output.buf.match(/===TG_START===\n([\s\S]*?)\n===TG_END===/);
+          const html = m ? m[1].trim() : "";
+          if (html) {
+            const goldData = extractGoldDataFromHtml(html);
+            if (goldData.price) {
+              goldData.mode = "plan";
+              if (manualPrice) { goldData.price = manualPrice; log("trade ict: manual price override $" + manualPrice); }
+              try {
+                const ohlc = await analyzeOhlcForIct(CONFIG?.twelvedata?.apiKey, "XAU/USD", goldData.price);
+                goldData.ohlc = ohlc;
+                log("trade ict ohlc: H1=" + ohlc.counts.h1 + " M15=" + ohlc.counts.m15 + " fvgB=" + ohlc.counts.fvgBull + " fvgS=" + ohlc.counts.fvgBear + " obB=" + ohlc.counts.obBull + " obS=" + ohlc.counts.obBear);
+              } catch (e) { log("trade ict: ohlc err " + e.message); }
+              const ict = await runIctAnalysis(llm, goldData);
+              if (ict) {
+                const check = validateIctOutput(ict);
+                if (check.ok) {
+                  const normalized = normalizeIctHtml(ict);
+                  const parts = normalized.length <= 3900 ? [normalized] : (() => {
+                    const ps = []; const chunks = normalized.split(/\n\n+/); let buf = "";
+                    for (const c of chunks) {
+                      if ((buf + "\n\n" + c).length <= 3900) buf = buf ? buf + "\n\n" + c : c;
+                      else { if (buf) ps.push(buf); buf = c.length <= 3900 ? c : c.slice(0, 3900); }
+                    }
+                    if (buf) ps.push(buf); return ps;
+                  })();
+                  for (let i = 0; i < parts.length; i++) {
+                    try {
+                      await tg.sendMessage(chatId, parts[i], { parse_mode: "HTML", disable_web_page_preview: true });
+                    } catch (e) {
+                      log("trade ict part " + (i+1) + "/" + parts.length + " gagal: " + e.message);
+                      try { await tg.sendMessage(chatId, parts[i].replace(/<[^>]+>/g, "")); } catch {}
+                    }
+                    if (i < parts.length - 1) await new Promise(r => setTimeout(r, 500));
+                  }
+                  ictSent = true;
+                  log("trade ict sent " + parts.length + " parts");
+                } else { log("trade ict validation failed: " + check.reason); }
+              } else { log("trade ict: LLM null"); }
+            } else { log("trade ict: extract gagal"); }
+          } else { log("trade ict: gold-analysis gagal (exit " + output.code + ")"); }
+        } catch (e) { log("trade ict err: " + e.message); }
+
+        // ===== FALLBACK: template lama =====
+        if (!ictSent) {
+          log("trade: fallback ke template lama");
+          const result = await runTradeAnalysis({ llm, price: manualPrice, twelveDataKey });
+          await tg.sendMessage(chatId, __escTg(result.formatted), { parse_mode: "HTML", disable_web_page_preview: true });
+          if (result.skillSaved) {
+            await tg.sendMessage(chatId, __escTg("💾 Signal disimpan sebagai skill. Cek /skills"), { parse_mode: "HTML" });
+          }
         }
       } catch (e) {
         await tg.sendMessage(chatId, __escTg("❌ Trade error: " + e.message), { parse_mode: "HTML" });
@@ -583,6 +886,68 @@ Langsung ketik permintaan untuk mulai.`);
         await tg.sendMessage(chatId, "❌ Gold analysis kosong (exit " + output.code + ")\n" + output.buf.slice(-300)).catch(() => {});
         return true;
       }
+      // ===== ICT/SMC UPGRADE =====
+      try {
+        const goldData = extractGoldDataFromHtml(html);
+        if (goldData.price) {
+          goldData.mode = "analysis";
+          try {
+            const ohlc = await analyzeOhlcForIct(CONFIG?.twelvedata?.apiKey, "XAU/USD", goldData.price);
+            goldData.ohlc = ohlc;
+            log("ohlc: H1=" + ohlc.counts.h1 + " M15=" + ohlc.counts.m15 + " swings=" + ohlc.counts.swings + " fvgB=" + ohlc.counts.fvgBull + " fvgS=" + ohlc.counts.fvgBear + " obB=" + ohlc.counts.obBull + " obS=" + ohlc.counts.obBear);
+            try {
+              goldData.patterns = detectPatterns(ohlc.rawH1, ohlc.rawM15);
+              if (goldData.patterns.ok) {
+                log("patterns: H1=" + goldData.patterns.patH1.length + " M15=" + goldData.patterns.patM15.length + " S/R=" + goldData.patterns.nearSupports.length + "/" + goldData.patterns.nearResistances.length + " chart=" + goldData.patterns.chartPatterns.length);
+              } else {
+                log("patterns: SKIP — " + goldData.patterns.skipReason);
+              }
+            } catch (pe) { log("patterns err: " + pe.message); }
+          } catch (e) {
+            log("ohlc err: " + e.message);
+          }
+          const ict = await runIctAnalysis(llm, goldData);
+          const check = ict ? validateIctOutput(ict) : { ok: false, reason: "llm null/empty" };
+          if (check.ok) {
+            const ictParts = (() => {
+              const maxLen = 3900;
+              if (ict.length <= maxLen) return [ict];
+              const ps = [];
+              const chunks = ict.split(/\n\n+/);
+              let buf = "";
+              for (const c of chunks) {
+                if ((buf + "\n\n" + c).length <= maxLen) buf = buf ? buf + "\n\n" + c : c;
+                else { if (buf) ps.push(buf); buf = c.length <= maxLen ? c : c.slice(0, maxLen); }
+              }
+              if (buf) ps.push(buf);
+              return ps;
+            })();
+            let ictSent = 0;
+            for (let i = 0; i < ictParts.length; i++) {
+              const normalized = normalizeIctHtml(ictParts[i]);
+              try {
+                await tg.sendMessage(chatId, normalized, { parse_mode: "HTML", disable_web_page_preview: true });
+                ictSent++;
+                if (i < ictParts.length - 1) await new Promise(r => setTimeout(r, 500));
+              } catch (e) {
+                log("ict part " + (i+1) + "/" + ictParts.length + " gagal: " + e.message);
+                log("ict raw snippet: " + ictParts[i].slice(0, 300).replace(/\n/g, " "));
+                try { await tg.sendMessage(chatId, ictParts[i].replace(/<[^>]+>/g, "")); ictSent++; }
+                catch (e2) { log("ict fallback " + (i+1) + " gagal: " + e2.message); }
+              }
+            }
+            log("ict sent " + ictSent + "/" + ictParts.length + " parts");
+            return true;
+          }
+          log("ict validation failed: " + check.reason + " — fallback template");
+        } else {
+          log("gold data extract failed (price null) — fallback template");
+        }
+      } catch (e) {
+        log("ict upgrade err: " + e.message);
+      }
+
+      // ===== FALLBACK: template existing =====
       // Smart split by paragraph, HTML-safe (tidak motong tag di tengah)
       function smartSplit(t, maxLen) {
         if (t.length <= maxLen) return [t];
@@ -1253,6 +1618,27 @@ async function main() {
     runDailyLearning(llm, msg => log(msg)).catch(e => log("learning startup: " + e.message));
   }, 2 * 60 * 1000);
   log("🎓 Learning scheduler aktif (check tiap 30m, run tiap 6h)");
+
+  // ===== HOURLY ICT CRON =====
+  setInterval(async () => {
+    try {
+      const { readTradeState } = await import("./lib/trade-analyzer.js");
+      const st = readTradeState();
+      if (!st.autoEnabled) return;
+      const now = new Date();
+      if (now.getMinutes() !== 0) return;
+      const hourKey = now.toISOString().slice(0, 13);
+      if (HOURLY_ICT_LAST_HOUR === hourKey) return;
+      HOURLY_ICT_LAST_HOUR = hourKey;
+      const allowlist = (process.env.TG_ALLOWLIST || "6206096363").split(",").map(s => s.trim()).filter(Boolean);
+      log("🕐 HOURLY ICT tick " + hourKey + " → " + allowlist.join(","));
+      for (const cid of allowlist) {
+        await runHourlyIctForChat(cid).catch(e => log("hourly chat " + cid + " err: " + e.message));
+      }
+    } catch (e) { log("hourly cron err: " + e.message); }
+  }, 60 * 1000);
+  log("🕐 Hourly ICT cron aktif (cek tiap menit, run top of hour kalau /trade auto on)");
+
   log(ALLOWED.size ? `Allowlist: ${[...ALLOWED].join(",")}` : "⚠️  Allowlist kosong — semua user bisa pakai");
 
   // Heartbeat independen dari poll loop. Timer tetap jalan walau proses LLM
