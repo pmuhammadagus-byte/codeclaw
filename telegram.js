@@ -758,7 +758,7 @@ Langsung ketik permintaan untuk mulai.`);
           if (toggle === "on") {
             state.autoEnabled = true;
             writeTradeState(state);
-            await tg.sendMessage(chatId, __escTg("✅ Auto-trade ON. Setiap hari 09:00 WIB auto analisa XAU/USD."), { parse_mode: "HTML" });
+            await tg.sendMessage(chatId, __escTg("✅ Auto-trade ON. Auto analisa ICT/SMC setiap 4 jam (07, 11, 15, 19, 23, 03 WIB)."), { parse_mode: "HTML" });
           } else if (toggle === "off") {
             state.autoEnabled = false;
             writeTradeState(state);
@@ -1627,17 +1627,18 @@ async function main() {
       if (!st.autoEnabled) return;
       const now = new Date();
       if (now.getMinutes() !== 0) return;
+      if (now.getUTCHours() % 4 !== 0) return;   // every 4h UTC (00,04,08,12,16,20)
       const hourKey = now.toISOString().slice(0, 13);
       if (HOURLY_ICT_LAST_HOUR === hourKey) return;
       HOURLY_ICT_LAST_HOUR = hourKey;
       const allowlist = (process.env.TG_ALLOWLIST || "6206096363").split(",").map(s => s.trim()).filter(Boolean);
-      log("🕐 HOURLY ICT tick " + hourKey + " → " + allowlist.join(","));
+      log("🕐 ICT tick " + hourKey + " → " + allowlist.join(","));
       for (const cid of allowlist) {
         await runHourlyIctForChat(cid).catch(e => log("hourly chat " + cid + " err: " + e.message));
       }
     } catch (e) { log("hourly cron err: " + e.message); }
   }, 60 * 1000);
-  log("🕐 Hourly ICT cron aktif (cek tiap menit, run top of hour kalau /trade auto on)");
+  log("🕐 ICT cron aktif — setiap 4 jam (00,04,08,12,16,20 UTC = 07,11,15,19,23,03 WIB) kalau /trade auto on");
 
   log(ALLOWED.size ? `Allowlist: ${[...ALLOWED].join(",")}` : "⚠️  Allowlist kosong — semua user bisa pakai");
 
