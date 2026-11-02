@@ -839,13 +839,28 @@ Langsung ketik permintaan untuk mulai.`);
           setTimeout(() => { child.kill(); resolve(buf + "\n[timeout]"); }, 60000);
         });
 
+        // ENRICHMENT: fetch DXY + events via EXA web search (injected)
+        try {
+          await tg.sendMessage(chatId, "🔎 Ambil DXY & kalender ekonomi via web search...").catch(() => {});
+          const enrichMod = await import("./lib/goldplan-enrich.js");
+          const exaKey = CONFIG?.web?.exaApiKey || CONFIG?.raw?.web?.exaApiKey || "";
+          log("enrichment: EXA key " + (exaKey ? "OK" : "KOSONG"));
+          const enrichRes = await enrichMod.fetchMacroEnrichment(exaKey, (m) => log(m));
+          global.__lastEnrichmentBlock = enrichMod.formatMacroEnrichment(enrichRes);
+          log("enrichment: dxy=" + (enrichRes.dxy ? "Y" : "N") + " events=" + (enrichRes.events ? "Y" : "N"));
+        } catch (e) {
+          log("enrichment err: " + e.message);
+          global.__lastEnrichmentBlock = "";
+        }
+
         await tg.sendMessage(chatId, "🧠 Menyusun analisis dengan standar Senior Analyst...");
         
         const { GOLDPLAN_PROMPT } = await import("./lib/goldplan-prompt.js");
         
         const userPrompt = "Berikut adalah data mentah terkini XAU/USD, Makro, dan Berita dari sistem:\n" +
-          "=== DATA MENTAH ===\n" + rawData + "\n=== END DATA ===\n\n" +
-          "Gunakan data di atas untuk mengisi bagian INPUT. Jika ada data yang kurang, tulis 'data tidak tersedia'.\n" +
+          "=== DATA MENTAH ===\n" + rawData + "\n=== END DATA ===\n" +
+          (global.__lastEnrichmentBlock || "") +
+          "\n\nGunakan SEMUA data di atas untuk mengisi bagian INPUT. Jika ada data yang kurang, tulis 'data tidak tersedia'.\n" +
           "Eksekusi METODOLOGI dan hasilkan laporan sesuai FORMAT OUTPUT FINAL.\n\n" +
           GOLDPLAN_PROMPT;
 
