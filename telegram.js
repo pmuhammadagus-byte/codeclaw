@@ -431,14 +431,14 @@ Saya coding agent canggih:
 • Git, gh CLI (GitHub)
 • Web search + fetch, RAG
 • Todo planning
-• 📊 Trade signal XAU/USD
+• 📊 Gold signal XAU/USD
 • 🔬 Research methods (agent/trading/tools)
 • 📚 Skill system (auto-learn, auto-save)
 
 <b>Model aktif:</b> <code>9router/Combo</code>
 
 <b>Skill & Memory:</b> /skills /skill /lessons /learn /mem /todo
-<b>Trading:</b> /trade /gold /goldplan
+<b>Trading:</b> /gold /goldplan
 <b>Research:</b> /research_methods
 <b>Sistem:</b> /status /whoami /clear /help
 
