@@ -224,6 +224,33 @@ function buildSystem(chatId, userInput = "") {
 }
 
 async function processMessage(chatId, userInput, from) {
+  // 🛡️ INTERCEPT XAU PRICE: Paksa eksekusi script asli, jangan biarkan LLM mengarang!
+  const isXauQuery = /(?:harga|price|berapa|analisa|analisis|bias|level|support|resistance).*(?:xau|gold|emas)|(?:xau|gold|emas).*(?:harga|price|berapa|analisa|analisis|bias|level|support|resistance)/i.test(userInput);
+  if (isXauQuery && !userInput.startsWith('/')) {
+    await tg.sendMessage(chatId, "⏳ Mengambil data real-time XAU/USD...").catch(() => {});
+    const { spawn } = await import("node:child_process");
+    const output = await new Promise((resolve) => {
+      const child = spawn("node", ["scripts/gold-analysis.mjs", "--no-telegram"], { cwd: __dirname, env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      let buf = "";
+      child.stdout.on("data", d => buf += d.toString());
+      child.stderr.on("data", d => buf += d.toString());
+      child.on("close", (code) => resolve({ buf, code }));
+      setTimeout(() => { child.kill(); resolve({ buf: buf + "\n[timeout]", code: -1 }); }, 60000);
+    });
+    const m = output.buf.match(/===TG_START===\n([\s\S]*?)\n===TG_END===/);
+    if (m) {
+      const html = m[1].trim();
+      const parts = html.length > 3900 ? [html.slice(0, 3900), html.slice(3900)] : [html];
+      for (const p of parts) {
+        await tg.sendMessage(chatId, p, { parse_mode: "HTML", disable_web_page_preview: true }).catch(() => {});
+      }
+      return; // Hentikan proses, LLM tidak perlu dipanggil!
+    } else {
+      await tg.sendMessage(chatId, "❌ Gagal mengambil data XAU/USD real-time. Coba lagi nanti atau ketik /gold.");
+      return;
+    }
+  }
+
   // 🛡️ P0-3: LONG-TASK HANDLER
   if (shouldChunk(userInput)) {
     const { file, size, lines } = saveMission(chatId, userInput);
@@ -337,7 +364,7 @@ async function processMessage(chatId, userInput, from) {
         entry.status = /^(error|failed|❌)/i.test(String(toolResult || "").trim()) ? "error" : "done";
         await updateToolStatus(currentIter);
 
-        session.add(chatId, { role: "tool", tool_call_id: tc.id, name: tc.function.name, content: toolResult });
+        session.add(chatId, { role: "tool", tool_call_id: tc.id, name: tc.function.name, content: String(toolResult || "(empty)") });
       }
       continue;
     }
@@ -365,6 +392,20 @@ async function processMessage(chatId, userInput, from) {
     }
     
     if (responseText.trim()) {
+      // Strip HTML details/summary (Gemini style)
+      responseText = responseText.replace(/<details>.*?<\/details>/gs, '');
+      responseText = responseText.replace(/<\/?details>|<\/?summary>/gi, '');
+      
+      // STRIP PONYTAIL: hapus artefak meta-commentary LLM sebelum kirim
+      responseText = responseText
+        .replace(/^.*→\s*skipped:.*$/gmi, '')
+        .replace(/^.*\bskipped\s*:.*$/gmi, '')
+        .replace(/^.*\badd when\b.*$/gmi, '')
+        .replace(/^.*\bponytail\b.*$/gmi, '')
+        .replace(/^.*\[metadata parsing.*$/gmi, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
       const priceTopic = /\b(?:xau|gold|emas)\b[^\n]{0,80}\$\s*\d{3,}|\$\s*\d{3,}[^\n]{0,80}\b(?:xau|gold|emas)\b|\b(?:harga|price|spot)\s+(?:xau|gold|emas)\s*[:=]?\s*\$?\d{3,}/i.test(responseText);
       const disclaimer = priceTopic
         ? '⚠️ <i>Jawaban dari model tanpa data live. Untuk harga real: /gold. Jangan pakai angka di atas untuk entry.</i>\n\n'
@@ -1026,6 +1067,24 @@ Langsung ketik permintaan untuk mulai.`);
         (tmux === "up" ? "🟢" : "🔴") + " tmux: " + tmux,
         (swapMB > 0 ? "🟢" : "🟡") + " Swap: " + swapMB + " MB",
         "🟢 LLM: " + (CONFIG.llm?.modelRef || "?"),
+        (() => {
+          try {
+            const { execSync } = require("node:child_process");
+            const out = execSync("ls -t /root/codeclaw/backups/*.tar.gz 2>/dev/null | head -1", { timeout: 2000 }).toString().trim();
+            if (!out) return "🟡 Backup: belum ada";
+            const stat = require("node:fs").statSync(out);
+            const ageH = Math.floor((Date.now() - stat.mtimeMs) / 3600000);
+            const icon = ageH < 48 ? "🟢" : ageH < 96 ? "🟡" : "🔴";
+            return icon + " Backup: " + ageH + "h lalu (" + Math.round(stat.size / 1024) + " KB)";
+          } catch { return "🟡 Backup: error"; }
+        })(),
+        (() => {
+          try {
+            const { execSync } = require("node:child_process");
+            const out = execSync("crontab -l 2>/dev/null | grep -c backup", { timeout: 2000 }).toString().trim();
+            return out > 0 ? "🟢 Cron backup: aktif" : "🔴 Cron backup: tidak ada";
+          } catch { return "🔴 Cron: error"; }
+        })(),
       ];
       await tg.sendMessage(chatId, lines.join("\n"));
       return true;
@@ -1433,8 +1492,8 @@ Langsung ketik permintaan untuk mulai.`);
     }
 
     case "/skills": {
-      const { SkillStore: SK } = await import("./lib/skills.js");
-      const store = new SK();
+      const { SkillStore: SK_STORE } = await import("./lib/skills.js");
+      const store = new SK_STORE();
       const skills = store.list();
       const stats = store.stats();
       let txt = "📚 Skills: " + skills.length + "\n\n";
@@ -1454,8 +1513,8 @@ Langsung ketik permintaan untuk mulai.`);
       return true;
     }
     case "/skill": {
-      const { SkillStore: SK2 } = await import("./lib/skills.js");
-      const store = new SK2();
+      const { SkillStore: SK_STORE2 } = await import("./lib/skills.js");
+      const store = new SK_STORE2();
       const parts = text.slice(7).trim().split(/\s+/);
       const sub = parts[0] || "";
       if (sub === "search") {

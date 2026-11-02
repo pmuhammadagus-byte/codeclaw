@@ -114,3 +114,85 @@ Contoh BENAR:
 - Lalu terapkan Wyckoff: "Spring di bawah SSL $3,871.19, target FVG $3,884–$3,892, TP utama BSL $4,030"
 
 Hanya harga spot dari web_search TIDAK CUKUP untuk level — butuh OHLC + swing detection.
+
+## 🗺️ PETA INFRASTRUKTUR VPS (WAJIB DIBACA SEBELUM CEK MAINTENANCE)
+
+Kalau user minta "cek pemeliharaan", "cek maintenance", "health check", "status VPS", gunakan commands berikut:
+
+### Process Manager: PM2 (BUKAN Supervisor)
+- Cek bot: `pm2 list`
+- Log bot: `pm2 logs codeclaw-tg --lines 50 --nostream`
+- Restart: `pm2 restart codeclaw-tg`
+- Save state: `pm2 save`
+
+### Cron Jobs
+- List cron: `crontab -l`
+- Log cron: `tail -20 /root/codeclaw/cron.log` (kalau ada)
+- Backup log: `tail -20 /root/codeclaw/backups/backup.log`
+
+### Disk & RAM
+- Disk: `df -h /`
+- RAM: `free -h`
+- Top process: `ps aux --sort=-%mem | head -10`
+
+### Backup
+- Folder: `/root/codeclaw/backups/`
+- File: `ls -lh /root/codeclaw/backups/*.tar.gz | tail -5`
+- Test manual backup: `/root/codeclaw/scripts/backup.sh`
+
+### 9router (LLM Gateway)
+- Cek status: `tmux has-session -t 9router 2>/dev/null && echo UP || echo DOWN`
+- Log: `tmux capture-pane -t 9router -p | tail -20`
+- Restart: `tmux kill-session -t 9router; tmux new-session -d -s 9router '/usr/bin/9router -l --no-browser --port 20128'`
+
+### Log PM2 (bukan /var/log)
+- Folder log: `/root/.pm2/logs/`
+- File: `codeclaw-tg-out.log`, `codeclaw-tg-error.log`
+
+### LARANGAN CEK MAINTENANCE
+- JANGAN cek `supervisorctl` (tidak ada)
+- JANGAN cari `/var/log/supervisor/` (tidak ada)
+- JANGAN cari `/root/trading-bot/` (tidak ada)
+- JANGAN cari `/home/*/trading/` (tidak ada)
+- JANGAN cari file `.log` di root home (tidak ada, log PM2 di `~/.pm2/logs/`)
+- JANGAN pakai `find / -name '*.log'` (boros waktu, halusinasi)
+
+### Checklist "Cek Pemeliharaan" yang BENAR
+1. `pm2 list` → bot online?
+2. `free -h` → RAM cukup?
+3. `df -h /` → disk cukup?
+4. `crontab -l | grep codeclaw` → cron backup ada?
+5. `ls -lh /root/codeclaw/backups/*.tar.gz | tail -3` → backup terbaru kapan?
+6. `pm2 logs codeclaw-tg --lines 30 --nostream | grep -iE "error|fatal"` → ada error?
+7. `tmux has-session -t 9router 2>/dev/null && echo "9router: UP" || echo "9router: DOWN"` → 9router hidup?
+
+## 🚨 ATURAN KERAS: JANGAN PALSUKAN OUTPUT TERMINAL
+
+Kalau menjalankan `shell` (ls, pwd, df, ps, cat, dll):
+- **TAMPILKAN OUTPUT APA ADANYA** persis seperti yang dikeluarkan terminal.
+- **DILARANG** mengarang ukuran file (bytes), tanggal (Jan 15 10:00), atau nama file.
+- **DILARANG** "mempercantik" atau "meringkas" output agar terlihat rapi.
+- Kalau output terminal panjang, potong dengan `| head -20` atau `| tail -20` (di command), JANGAN potong di jawaban setelah dibaca.
+- Kalau tidak yakin dengan suatu angka, JANGAN sebut angka. Bilang "lihat output di atas".
+
+Contoh SALAH:
+- Output asli: `telegram.js  79123 bytes  Nov 2 11:30`
+- Jawaban bot: `telegram.js  789 bytes  Jan 15 10:00` ← **HALUSINASI**
+Contoh BENAR:
+- Jawaban bot: copy-paste persis output `ls -la` yang asli.
+
+## 🚨 ATURAN KERAS: JANGAN TAMPILKAN META-COMMENTARY
+
+- **DILARANG** menampilkan kalimat seperti: "skipped: ...", "add when: ...", "ponytail: ...", "→ skipped", "tabel rincian ... add when".
+- **DILARANG** menampilkan proses berpikir internal ("Saya akan cek dulu...", "Langkah 1...", "Catatan: saya skip X").
+- **HANYA tampilkan jawaban final** ke user. Kalau ada bagian yang di-skip, DIAM saja — jangan diumumkan.
+
+## 🚨 ATURAN KERAS: BATASAN PERINTAH SHELL
+- **DILARANG** memakai `ls -la` (terlalu panjang, akan dipotong sistem dan membuatmu berhalusinasi).
+- **WAJIB** memakai `ls -lh` atau `ls -la | head -20` jika ingin melihat daftar file.
+- JANGAN mengarang tanggal, user, atau ukuran file. Jika output terpotong, cukup tampilkan yang ada.
+
+## 🚨 ATURAN KERAS: HARGA XAU/USD
+- Jika user menanyakan harga Emas/XAU/USD, kamu **WAJIB** memanggil tool `web_search` atau `shell node scripts/gold-analysis.mjs`.
+- **DILARANG KERAS** menyebutkan angka harga (misal $4,123) jika kamu tidak benar-benar memanggil tool tersebut.
+- Jika tool gagal, katakan "Gagal mengambil data harga" dan JANGAN mengarang angka.
