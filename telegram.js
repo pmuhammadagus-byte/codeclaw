@@ -13,6 +13,8 @@ import { loadConfig, migrateIfNeeded } from "./lib/config.js";
 import { CONFIG_FILE, DATA_DIR, MEMORY_FILE, LEARNING_STATE } from "./lib/paths.js";
 import { TOOL_USE_RULES } from "./lib/tool-use-rules.js";
 import { getBrainPrompt } from "./lib/brain.js";
+import { think as thinkV2, resetSession as resetV2 } from "./lib/brain-v2.js";
+import { recordToolCall, buildContextBlock, validateResponse, resetContext } from "./lib/awareness.js";
 import { buildSkillSection } from "./lib/skills.js";
 import { getSkillStore } from "./lib/tools.js";
 import { shouldChunk, saveMission, buildMissionPrompt } from "./lib/long-task.js";
@@ -35,6 +37,7 @@ function loadFileIfExists(name) {
   return fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "";
 }
 const BASE_SYSTEM = [
+  loadFileIfExists("SOUL.md"),
   loadFileIfExists("IDENTITY.md"),
   loadFileIfExists("system.md"),
 ].filter(Boolean).join("\n\n---\n\n");
@@ -218,13 +221,53 @@ function buildSystem(chatId, userInput = "") {
     }
   } catch (e) { console.log("[buildSystem] skillSection fail:", e.message); }
   const trackerHint = "\n\n## Skill tracking\nJika kamu memakai skill dari skill_find/skill_read, WAJIB panggil skill_record({id, success}) setelah selesai — success=true jika berhasil, false jika gagal. Ini supaya skill yang tidak berguna bisa diperbaiki otomatis.";
-  return BASE_SYSTEM + getBrainPrompt(brainLevel) + TOOL_USE_RULES + todoSection(session, chatId) + memorySection(session, chatId) + skillSection + trackerHint;
+  const ctxBlock = buildContextBlock(chatId);
+  return ctxBlock + BASE_SYSTEM + getBrainPrompt(brainLevel) + TOOL_USE_RULES + todoSection(session, chatId) + memorySection(session, chatId) + skillSection + trackerHint;
 }
 
 async function processMessage(chatId, userInput, from) {
+  // 🧠 BRAIN V2 route (config.agent.brainVersion === "v2")
+  if ((CONFIG.agent?.brainVersion || "v1") === "v2") {
+    try {
+      log("🧠 BRAIN V2 pipeline");
+      const result = await thinkV2({
+        userInput,
+        chatId,
+        llm,
+        tools: {
+          execute: async (name, args) => executeTool(name, args, {
+            session, chatId, config: CONFIG,
+            approvalCallback: async () => true,
+            approvalMode: "none"
+          })
+        },
+        onLog: (m) => log(m)
+      });
+      const text = result.answer || "(no response)";
+      await tg.sendMessage(chatId, mdToTelegramHtml(text), { parse_mode: "HTML", disable_web_page_preview: true }).catch(async () => {
+        await tg.sendMessage(chatId, text);
+      });
+      return;
+    } catch (e) {
+      log("BRAIN V2 err: " + e.message);
+      await tg.sendMessage(chatId, "❌ Brain V2 error: " + e.message);
+      return;
+    }
+  }
+
   // 🛡️ INTERCEPT XAU PRICE: Paksa eksekusi script asli, jangan biarkan LLM mengarang!
+  // 🧠 INTERCEPT dengan META-QUESTION awareness
+  const metaRe = /\b(apakah|dari mana|kenapa|mengapa|yakin|tahu|tahu dari mana|halusinasi|sumber|kamu tahu|kamu dapat|kamu ambil|asal|beneran|bukan karangan)\b/i;
+  const isMetaQuestion = metaRe.test(userInput);
   const isXauQuery = /(?:harga|price|berapa|analisa|analisis|bias|level|support|resistance).*(?:xau|gold|emas)|(?:xau|gold|emas).*(?:harga|price|berapa|analisa|analisis|bias|level|support|resistance)/i.test(userInput);
-  if (isXauQuery && !userInput.startsWith('/')) {
+  
+  if (isXauQuery && !isMetaQuestion && !userInput.startsWith('/')) {
+    log("INTERCEPT XAU: trigger /gold (" + userInput.slice(0, 60) + ")");
+  } else if (isXauQuery && isMetaQuestion) {
+    log("META-QUESTION detected, skip intercept → route to LLM: " + userInput.slice(0, 60));
+  }
+  
+  if (isXauQuery && !isMetaQuestion && !userInput.startsWith('/')) {
     await tg.sendMessage(chatId, "⏳ Mengambil data real-time XAU/USD...").catch(() => {});
     const { spawn } = await import("node:child_process");
     const output = await new Promise((resolve) => {
@@ -363,6 +406,7 @@ async function processMessage(chatId, userInput, from) {
         await updateToolStatus(currentIter);
 
         session.add(chatId, { role: "tool", tool_call_id: tc.id, name: tc.function.name, content: String(toolResult || "(empty)") });
+        recordToolCall(chatId, tc.function.name, args, toolResult);
       }
       continue;
     }
@@ -925,7 +969,7 @@ Langsung ketik permintaan untuk mulai.`);
       return true;
     }
     case "/clear":
-      session.clear(chatId); session.todoClear(chatId);
+      session.clear(chatId); session.todoClear(chatId); resetV2(chatId); resetContext(chatId);
       await tg.sendMessage(chatId, "✅ Cleared");
       return true;
     case "/todo": {
