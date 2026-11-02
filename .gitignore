@@ -62,3 +62,9 @@ bin/trade-auto.sh
 bin/research-auto.sh
 *.bak-*
 *.bak
+
+# Local backups & configs
+backups/
+skills-backup-*/
+ecosystem.config.cjs
+*.bak2-*

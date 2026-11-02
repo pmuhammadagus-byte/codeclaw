@@ -634,10 +634,10 @@ Saya coding agent canggih:
 
 <b>Model aktif:</b> <code>9router/Combo</code>
 
-<b>Coding:</b> /skills /skill /memory /learn /learned /todo /mem /status /whoami /clear /help
-<b>Memory:</b> /import_memory
+<b>Skill & Memory:</b> /skills /skill /lessons /learn /mem /todo
 <b>Trading:</b> /trade /gold /goldplan
 <b>Research:</b> /research_methods
+<b>Sistem:</b> /status /whoami /clear /help
 
 Langsung ketik permintaan untuk mulai.`);
       return true;
@@ -719,19 +719,6 @@ Langsung ketik permintaan untuk mulai.`);
       } catch (e) {
         await tg.sendMessage(chatId, __escTg("❌ Learning gagal: " + e.message), { parse_mode: "HTML" });
       }
-      return true;
-    }
-    case "/learned": {
-      const recents = readRecentLearning(5);
-      if (!recents.length) {
-        await tg.sendMessage(chatId, "📚 Belum ada riset tersimpan. Coba /learn dulu.");
-        return true;
-      }
-      let text = "📚 <b>5 Riset Terakhir:</b>\n\n";
-      recents.forEach((r, i) => {
-        text += `${i+1}. <b>${__escTg(r.topic)}</b>\n   ${__escTg(r.insight)}\n\n`;
-      });
-      await tg.sendMessage(chatId, text, { parse_mode: "HTML", disable_web_page_preview: true }).catch(() => {});
       return true;
     }
     case "/trade": {
@@ -1445,43 +1432,6 @@ Langsung ketik permintaan untuk mulai.`);
       return true;
     }
 
-    case "/import_memory": {
-      // /import_memory DISABLED — menghasilkan noise (123 skill percakapan jadi sampah)
-      // Kalau butuh import manual, pakai script standalone atau minta developer.
-      await tg.sendMessage(chatId, "⛔ /import_memory dinonaktifkan.\n\nAlasan: konversi memory percakapan jadi skill menghasilkan noise (123 noise terakhir = buang-buang token & bikin LLM bingung).\n\nUntuk riset terstruktur, gunakan /learn. Untuk skill manual, pakai /skill atau /skill save.");
-      return true;
-      // eslint-disable-next-line no-unreachable
-      try {
-        const { MEMORY_FILE } = await import("./lib/paths.js");
-        const { SkillStore } = await import("./lib/skills.js");
-        const fsm = await import("node:fs");
-        if (!fsm.existsSync(MEMORY_FILE)) {
-          await tg.sendMessage(chatId, "❌ Memory file tidak ada.");
-          return true;
-        }
-        const lines = fsm.readFileSync(MEMORY_FILE, "utf8").split("\n").filter(Boolean);
-        const store = new SkillStore();
-        let saved = 0, skipped = 0;
-        for (const line of lines) {
-          try {
-            const m = JSON.parse(line);
-            const task = String(m.task || "").trim();
-            const insight = String(m.insight || "").trim();
-            if (!task || !insight || insight.length < 20) { skipped++; continue; }
-            const existing = store.find(task.slice(0, 30), 3);
-            if (existing.some(s => (s.name+s.trigger).toLowerCase().includes(task.toLowerCase().slice(0,25)))) { skipped++; continue; }
-            const tags = [...new Set((task+" "+insight).toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(w=>w.length>4))].slice(0,6);
-            const cleanTask = task.replace(/^\[RISET\]\s*/, "").trim();
-            store.save({ name: (task.startsWith("[RISET]")?"riset: ":"memory: ")+cleanTask.slice(0,55), trigger: cleanTask+" | "+insight.slice(0,100), procedure: "## Insight\n\n"+insight+"\n\n## Sumber\n\nDari memory.", tags, examples: [] });
-            saved++;
-          } catch { skipped++; }
-        }
-        await tg.sendMessage(chatId, `📚 Import memory → skill\n\n✅ Saved: ${saved}\n⏭ Skipped: ${skipped}\n\nCek /skills`);
-      } catch (e) {
-        await tg.sendMessage(chatId, "❌ Error: " + e.message);
-      }
-      return true;
-    }
     case "/skills": {
       const { SkillStore: SK } = await import("./lib/skills.js");
       const store = new SK();
