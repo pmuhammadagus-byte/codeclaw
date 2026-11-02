@@ -68,3 +68,6 @@ backups/
 skills-backup-*/
 ecosystem.config.cjs
 *.bak2-*
+
+# ICT archive
+archive/
