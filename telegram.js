@@ -227,7 +227,11 @@ function buildSystem(chatId, userInput = "") {
 
 async function processMessage(chatId, userInput, from) {
   // 🧠 BRAIN V2 route (config.agent.brainVersion === "v2")
-  if ((CONFIG.agent?.brainVersion || "v1") === "v2") {
+    // 🔧 ACTION_ROUTE_FIX: task butuh tool → skip brain-v2, pakai loop lama (yang kirim TOOL_DEFINITIONS)
+  const __actionTask = /(?:buat|bikin|create|build|generate|tulis|write|edit|ubah|ganti|hapus|delete|jalankan|run|execute|test|repo|commit|push|install|clone|refactor|rename|move|copy|mkdir|ls\b|cat\b|grep|gh\s|git\s|npm\s|node\s)/i.test(userInput);
+  if (__actionTask) {
+    log("🔧 ACTION_ROUTE: skip brain-v2, pakai tool-calling loop lama");
+  } else if ((CONFIG.agent?.brainVersion || "v1") === "v2") {
     try {
       log("🧠 BRAIN V2 pipeline");
       const result = await thinkV2({
@@ -448,11 +452,66 @@ async function processMessage(chatId, userInput, from) {
         .replace(/\n{3,}/g, '\n\n')
         .trim();
 
-      const priceTopic = /\b(?:xau|gold|emas)\b[^\n]{0,80}\$\s*\d{3,}|\$\s*\d{3,}[^\n]{0,80}\b(?:xau|gold|emas)\b|\b(?:harga|price|spot)\s+(?:xau|gold|emas)\s*[:=]?\s*\$?\d{3,}/i.test(responseText);
-      const disclaimer = priceTopic
-        ? '⚠️ <i>Jawaban dari model tanpa data live. Untuk harga real: /gold. Jangan pakai angka di atas untuk entry.</i>\n\n'
-        : '';
-      await tg.sendMessage(chatId, disclaimer + mdToTelegramHtml(responseText), { parse_mode: "HTML" });
+      
+      // 🚨 AUTO_WRITE_REPO: Cegat kode di chat, paksa tulis ke file & git init
+      try {
+        const codeRegex = /\`\`\`([a-z]*)\n([\s\S]*?)\`\`\`/g;
+        let match;
+        let written = [];
+        let repoDir = null;
+        const timestamp = Date.now();
+        const projectName = `app-${timestamp}`;
+        const projectPath = path.join(process.env.HOME || '/root', 'projects', projectName);
+
+        // 1. Cek Markdown Code Block
+        while ((match = codeRegex.exec(responseText)) !== null) {
+          const lang = (match[1] || '').toLowerCase();
+          const code = match[2];
+          const ext = ['js','javascript'].includes(lang) ? 'js' :
+                      ['ts','typescript'].includes(lang) ? 'ts' :
+                      lang === 'html' ? 'html' :
+                      lang === 'css' ? 'css' :
+                      ['py','python'].includes(lang) ? 'py' :
+                      lang === 'json' ? 'json' : 'txt';
+          
+          if (!repoDir) {
+            fs.mkdirSync(projectPath, { recursive: true });
+            repoDir = projectPath;
+          }
+          
+          let filename = ext === 'html' ? 'index.html' : `file-${written.length + 1}.${ext}`;
+          if (written.includes(filename)) filename = `file-${written.length + 1}.${ext}`;
+          
+          fs.writeFileSync(path.join(repoDir, filename), code);
+          written.push(filename);
+        }
+
+        // 2. Cek Raw HTML (tanpa backtick)
+        if (written.length === 0 && /<!DOCTYPE html|<html/i.test(responseText)) {
+          const htmlMatch = responseText.match(/<!DOCTYPE html[\s\S]*?<\/html>/i) || responseText.match(/<html[\s\S]*?<\/html>/i);
+          if (htmlMatch) {
+            fs.mkdirSync(projectPath, { recursive: true });
+            repoDir = projectPath;
+            fs.writeFileSync(path.join(repoDir, 'index.html'), htmlMatch[0]);
+            written.push('index.html');
+          }
+        }
+
+        // 3. Git init & Commit (CLI)
+        if (written.length > 0) {
+          const cp = require('child_process');
+          cp.execSync('git init', { cwd: repoDir, stdio: 'ignore' });
+          cp.execSync('git add .', { cwd: repoDir, stdio: 'ignore' });
+          cp.execSync('git -c user.name="CodeClaw" -c user.email="codeclaw@local" commit -m "Initial commit by CodeClaw"', { cwd: repoDir, stdio: 'ignore' });
+          
+          responseText = `✅ **Repo Berhasil Dibuat!**\n\n📁 Lokasi: \`${repoDir}\`\n📄 File: ${written.join(', ')}\n\n_Kode dihapus dari chat untuk mencegah error HTML di Telegram._`;
+          log("AUTO_WRITE_REPO: " + repoDir + " files=" + written.join(","));
+        }
+      } catch (e) {
+        log("AUTO_WRITE_REPO_ERR: " + e.message);
+      }
+
+      await tg.sendMessage(chatId, mdToTelegramHtml(responseText), { parse_mode: "HTML" });
     }
     else await tg.sendMessage(chatId, "(no response)").catch(() => {});
     reflectExperience(llm, userInput, lastMessages).then(ins => saveExperience(userInput, ins, true)).catch(() => {});
