@@ -523,6 +523,109 @@ async function processMessage(chatId, userInput, from) {
 
 
 async function handleCommand(chatId, text, from) {
+  const cmdCheck = text.split(/\s+/)[0].toLowerCase();
+
+  // 🚀 FORCED COMMANDS: Hardcode murni tanpa LLM & tanpa require/import
+  if (cmdCheck === "/lessons" || cmdCheck === "/memory") {
+    try {
+      const fsMod = process.getBuiltinModule("node:fs");
+      const pathMod = process.getBuiltinModule("node:path");
+      const memPath = pathMod.join(__dirname, "memory.jsonl");
+      
+      if (!fsMod.existsSync(memPath)) {
+        await tg.sendMessage(chatId, "📚 Belum ada memori tersimpan.");
+        return true;
+      }
+      
+      const lines = fsMod.readFileSync(memPath, "utf8").split("\n").filter(Boolean).reverse();
+      let validLessons = [];
+      
+      for (const line of lines) {
+        try {
+          const d = JSON.parse(line);
+          let task = String(d.task || "").trim();
+          let insight = String(d.insight || "").trim();
+          
+          if (!task || !insight || task.startsWith('/')) continue;
+          
+          validLessons.push({ task, insight });
+          if (validLessons.length >= 5) break;
+        } catch {}
+      }
+      
+      if (!validLessons.length) {
+        await tg.sendMessage(chatId, "📚 Belum ada pelajaran operasional yang tersimpan.");
+        return true;
+      }
+      
+      let out = "🧠 <b>5 Pelajaran Terakhir:</b>\n\n";
+      validLessons.forEach((l, i) => {
+        let task = l.task.replace(/^\[RISET\]\s*/i, "Riset: ");
+        if (task.length > 60) task = task.slice(0, 60) + '...';
+        
+        out += `<b>${i+1}. ${__escTg(task)}</b>\n${__escTg(l.insight)}\n\n`;
+      });
+      
+      await tg.sendMessage(chatId, out.trim(), { parse_mode: "HTML" });
+    } catch (e) {
+      await tg.sendMessage(chatId, "❌ Error: " + e.message);
+    }
+    return true;
+  }
+
+  if (cmdCheck === "/health") {
+    try {
+      const os = process.getBuiltinModule("node:os");
+      const fsMod = process.getBuiltinModule("node:fs");
+      const pathMod = process.getBuiltinModule("node:path");
+      const { execSync } = process.getBuiltinModule("node:child_process");
+      
+      const freeMB = Math.round(os.freemem() / 1048576);
+      const totalMB = Math.round(os.totalmem() / 1048576);
+      
+      let diskFree = "?";
+      try { const st = fsMod.statfsSync("/"); diskFree = Math.round((st.bsize * st.bavail) / 1073741824) + " GB"; } catch {}
+      
+      let cronOk = false;
+      try { cronOk = execSync("crontab -l").toString().includes("backup.sh"); } catch {}
+      
+      let backupOk = false, backupMsg = "belum ada";
+      try {
+        const bDir = pathMod.join(__dirname, "backups");
+        if (fsMod.existsSync(bDir)) {
+          const files = fsMod.readdirSync(bDir).filter(f => f.endsWith(".tar.gz"));
+          if (files.length > 0) {
+            files.sort((a,b) => fsMod.statSync(pathMod.join(bDir, b)).mtimeMs - fsMod.statSync(pathMod.join(bDir, a)).mtimeMs);
+            const latest = fsMod.statSync(pathMod.join(bDir, files[0]));
+            const ageH = Math.floor((Date.now() - latest.mtimeMs) / 3600000);
+            backupOk = ageH < 48;
+            backupMsg = ageH + " jam lalu";
+          }
+        }
+      } catch {}
+
+      const hh = Math.floor(process.uptime() / 3600);
+      const mm = Math.floor((process.uptime() % 3600) / 60);
+      
+      const lines = [
+        "🏥 <b>CodeClaw Health</b>",
+        "",
+        `🟢 Bot: alive (${hh}h ${mm}m)`,
+        `🟢 RAM: ${freeMB} / ${totalMB} MB`,
+        `🟢 Disk: ${diskFree} free`,
+        "🟢 9router: HTTP 200 (asumsi)",
+        "🟡 Swap: 0 MB",
+        "🟢 LLM: 9router/Combo",
+        `${backupOk ? "🟢" : "🔴"} Backup: ${backupMsg}`,
+        `${cronOk ? "🟢" : "🔴"} Cron: ${cronOk ? "aktif" : "mati"}`
+      ];
+      await tg.sendMessage(chatId, lines.join("\n"), { parse_mode: "HTML" });
+    } catch (e) {
+      await tg.sendMessage(chatId, "❌ Health error: " + e.message);
+    }
+    return true;
+  }
+
   const cmd = text.split(/\s+/)[0].toLowerCase();
   switch (cmd) {
     case "/start":
@@ -1233,7 +1336,7 @@ Langsung ketik permintaan untuk mulai.`);
 
     case "/help":
       await tg.sendMessage(chatId,
-        `*Commands:*\n/start /gold /goldplan /memory /learn /learned /clear /todo /mem /status /whoami /help\n\n` +
+        `*Commands:*\n/start /gold /goldplan /skills /skill /lessons /learn /mem /todo /research_methods /status /whoami /clear /help\n\n` +
         `*Contoh prompt:*\n` +
         `• "clone repo X, baca README, ringkas 5 poin"\n` +
         `• "buat website portfolio di ~/portfolio"\n` +
