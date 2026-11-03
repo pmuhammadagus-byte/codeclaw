@@ -1,43 +1,97 @@
+<div align="center">
+
 # 🤖 CodeClaw Pro
 
-**CodeClaw** is a lightweight, highly customizable AI Agent and Telegram Bot designed for autonomous coding, real-time trading analysis (XAU/USD), and continuous learning. It runs efficiently on low-resource VPS environments.
+**The Ultimate Autonomous AI Agent & Telegram Bot for Coding and XAU/USD Trading**
 
-## ✨ Core Features
+[![npm version](https://badge.fury.io/js/@cakagus%2Fcodeclaw.svg)](https://www.npmjs.com/package/@cakagus/codeclaw)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-v22%2B-brightgreen)](https://nodejs.org)
 
-### 🧠 Cognitive Engine (20-Layer Brain)
-- **Conscious Pipeline**: 20-layer reasoning to minimize hallucinations.
-- **Action-Route**: Seamlessly bypasses cognitive pipeline for tool execution (coding, shell, git).
-- **Zero-LLM Commands**: Crucial commands like /health and /lessons are hardcoded for instant, hallucination-free responses.
+*Lightweight, fast, and runs smoothly even on a 1GB RAM VPS.*
 
-### 📊 Trading & Market Analysis (XAU/USD)
-- **/gold**: 6-section ICT/SMC analysis with real-time TwelveData OHLC and EXA news integration.
-- **/goldplan**: Detailed macro-to-micro trading plan enriched with live DXY and Economic Calendar events.
-- **Anti-Hallucination**: Validator rejects outputs with impossible prices.
+</div>
 
-### 📚 Continuous Learning & Memory
-- **Auto-Save Skills**: /learn and autonomous cron distills research into reusable skills.
-- **/lessons**: View the 5 most recent long-term insights from complex tasks.
-- **/mem**: Short-term session memory (key-value).
+---
+
+## 🌟 Why CodeClaw?
+CodeClaw is not just another chatbot. It is an **autonomous agent** built for real-world execution, combining LLM reasoning with a robust, hallucination-free Node.js backend.
+
+- 🧠 **20-Layer Cognitive Brain:** A conscious pipeline that prevents AI hallucinations.
+- 📊 **Real-Time Trading Analysis:** Deep XAU/USD analysis using ICT/SMC, TwelveData OHLC, and EXA news.
+- 🛠️ **True Tool Execution:** Reads, writes, and debugs code directly on your VPS via native shell and Git integration.
+- 📚 **Self-Learning:** Autonomously researches the web and saves them as reusable skills.
+- ⚡ **Zero-LLM Commands:** System checks (/health, /lessons) are hardcoded for instant, 100% accurate responses.
+
+---
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    User([Telegram User]) -->|Chat / Command| Bot[CodeClaw Gateway]
+    
+    Bot -->|Action/Coding| ToolLoop[Action Route: 32+ Native Tools]
+    Bot -->|System Check| ZeroLLM[Zero-LLM: /health, /lessons]
+    Bot -->|Chat/Reasoning| Brain20[20-Layer Cognitive Pipeline]
+    
+    ToolLoop -->|Read/Write/Shell| VPS[(Local VPS & Git)]
+    ToolLoop -->|Fetch| LLM[9router / OpenAI API]
+    
+    Brain20 -->|Reason| LLM
+    Brain20 -->|Verify| Brain20
+    
+    Bot -->|Trading| Gold[TwelveData + EXA]
+    Gold -->|Analysis| LLM
+    
+    LLM -->|Final Response| User
+```
+
+---
 
 ## 🚀 Commands
-| Category | Commands |
-|----------|----------|
-| **Trading** | /gold, /goldplan |
-| **Skill & Memory** | /skills, /skill, /lessons, /learn, /mem, /todo |
-| **Research** | /research_methods |
-| **System** | /health, /status, /doctor, /start, /help, /whoami, /clear |
+
+| Category | Commands | Description |
+| :--- | :--- | :--- |
+| **Trading** | `/gold` `/goldplan` | Real-time XAU/USD analysis & actionable trade plans. |
+| **Skill & Memory** | `/skills` `/skill` `/lessons` `/learn` `/mem` `/todo` | Manage AI memory, list skills, and trigger autonomous research. |
+| **Research** | `/research_methods` | Deep dive into AI agents, trading, and dev tools. |
+| **System** | `/health` `/status` `/doctor` `/start` `/help` | Instant system monitoring and bot status. |
+
+---
+## 📦 Quick Start
+
+### 1. Install via NPM
+```bash
+npm install -g @cakagus/codeclaw
+```
+
+### 2. Configure Environment
+Copy `config.example.json` to `config.json` and fill in your API keys:
+- Telegram Bot Token
+- 9router (or OpenAI-compatible) API Key
+- TwelveData API Key (for Trading)
+- EXA API Key (for Web Search)
+
+### 3. Run with PM2
+```bash
+pm2 start bin/codeclaw.js --name codeclaw-tg --node-args="--max-old-space-size=512"
+pm2 save
+```
+
+---
 
 ## 🛠️ Tech Stack
-- **Runtime**: Node.js (v22+)
-- **Database**: SQLite (session & memory), Markdown files (skills)
-- **LLM Provider**: OpenAI-compatible (9router, Gemini, Groq, etc.)
-- **Data Providers**: TwelveData (OHLC), EXA (Search)
-- **Deployment**: PM2
+- **Runtime:** Node.js (v22+)
+- **Database:** SQLite (Session & Memory) + Markdown (Skills)
+- **LLM Engine:** OpenAI-Compatible (9router, Gemini, Groq, etc.)
+- **Data Providers:** TwelveData (OHLC), EXA (Search API)
 
-## 📦 Installation
-1. npm install -g @cakagus/codeclaw
-2. Configure config.json based on config.example.json.
-3. pm2 start bin/codeclaw.js --name codeclaw-tg
+---
 
-## ⚠️ Security Notes
-Never commit config.json to GitHub. It contains sensitive API keys.
+## ⚠️ Security Warning
+**NEVER commit your `config.json` to GitHub.** It contains your private API keys. Ensure `config.json` is listed in your `.gitignore`.
+
+---
+<div align="center">
+Made with ❤️ for autonomous AI and trading.
+</div>
