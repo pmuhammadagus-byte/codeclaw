@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { LLM } from "./lib/llm.js";
 import { mdToTelegramHtml } from "./lib/md-to-html.js";
 import { Session } from "./lib/session.js";
-import { TOOL_DEFINITIONS, executeTool } from "./lib/tools.js";
+import { TOOL_DEFINITIONS, executeTool as _executeTool } from "./lib/tools.js";
 import { TelegramAPI } from "./lib/telegram-api.js";
 import { todoSection } from "./lib/planner.js";
 import { memorySection, retrieveExperiences, reflectExperience, saveExperience } from "./lib/memory.js";
@@ -48,7 +48,49 @@ const DL_DIR = path.join(__dirname, "downloads");
 fs.mkdirSync(DL_DIR, { recursive: true });
 
 // === Load config dengan backward compat ===
+// MCP-WRAPPER-START
+import { startMcpServers, getMcpTools, callMcpTool } from "./lib/mcp.js";
+
+let mcpReady = false;
+async function executeTool(name, args, ctx) {
+  if (mcpReady && typeof name === "string" && name.startsWith("mcp__")) {
+    try {
+      const res = await callMcpTool(name, args);
+      if (res?.content && Array.isArray(res.content)) {
+        return res.content.map(c => c.text ?? JSON.stringify(c)).join("\n");
+      }
+      return JSON.stringify(res);
+    } catch (e) {
+      return `MCP tool error: ${e.message}`;
+    }
+  }
+  return _executeTool(name, args, ctx);
+}
+// MCP-WRAPPER-END
+
 let CFG = loadConfig(CONFIG_PATH);
+
+
+// MCP-INIT-START
+try {
+  await startMcpServers(CFG);
+  const _mcpTools = getMcpTools();
+  for (const t of _mcpTools) {
+    TOOL_DEFINITIONS.push({
+      type: "function",
+      function: {
+        name: t.name,
+        description: t.description || `[MCP] ${t.name}`,
+        parameters: t.inputSchema || { type: "object", properties: {} },
+      },
+    });
+  }
+  mcpReady = _mcpTools.length > 0;
+  if (mcpReady) console.log(`[mcp] ${_mcpTools.length} tools MCP terdaftar`);
+} catch (e) {
+  console.error(`[mcp] init gagal (bot tetap jalan): ${e.message}`);
+}
+// MCP-INIT-END
 if (migrateIfNeeded(CFG, CONFIG_PATH)) {
   console.log("⚠️  Config lama terdeteksi, sudah dimigrasi ke format baru");
   CFG = loadConfig(CONFIG_PATH);

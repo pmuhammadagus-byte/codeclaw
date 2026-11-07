@@ -20,7 +20,9 @@
     "@ai-sdk/google": "^4.0.108",
     "@ai-sdk/openai": "^4.0.105",
     "@ai-sdk/react": "^4.0.161",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "ai": "^7.0.157",
+    "mcp-auth": "^1.0.0-beta.1",
     "node-cron": "^4.6.0",
     "zod": "^4.6.7"
   },
